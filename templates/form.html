@@ -1,0 +1,65 @@
+{% extends 'cadastro/base/modelo.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+<title>{{titulo|default:'Formulário'}}</title>
+{% endblock %}
+
+{% block menu %}
+{% include 'cadastro/base/menu.html' %}
+{% endblock %}
+
+{% block highlights %}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h3>{{titulo|default:'Formulário'}}</h3>
+    <p>Preencha todos os campos obrigatórios</p>
+
+    <form class='form' method="POST">
+        <div class='row'>
+            <h5>Account Information</h5>
+            {% if account %}
+            <h5>Accout Number: {{ item }} </h5>
+            {% for item in account %}
+                <div class='col-md-12'> 
+                    {{ item }} 
+            </div>
+            {% endfor %}
+            {% endif %}
+            <h5>Orders</h5>
+            {% if orders %}
+            {% for item in orders %}
+            <div class='col-md-12'> {{ item }} </div>
+            {% endfor %}
+            {% endif %}
+            <h5>Positions</h5>
+            {% if positions %}
+            {% for item in positions %}
+            <div class='col-md-12'> {{ item }} </div>
+            {% endfor %}
+            {% endif %}
+            <h5>Assets</h5>
+            {% if assets %}
+            {% for item in assets %}
+            <div class='col-md-12'> 
+                {{ item }}
+                <p>-----------------  </p>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% csrf_token %}
+        </div>
+        <input type="submit" value={{ botao|default:'OK' }}>
+    </form>
+
+</div>
+{% endblock %}
+
+{% block footer %}
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}

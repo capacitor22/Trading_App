@@ -1,0 +1,102 @@
+{% extends 'cadastro/base/modelo.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+<title>Lista de Preços</title>
+{% endblock %}
+
+{% block menu %}
+{% include 'cadastro/base/menu.html' %}
+{% endblock %}
+
+{% block highlights %}
+<h3>{{stock.symbol}} - {{stock.name}}</h3>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h3>Lista de Preços</h3>
+    <div class="menuLista">
+        <a href="{% url 'cadastro:PainelInicial' %}" class="btn btn-secondary btn-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-house-door" viewBox="0 0 16 16">
+                <path d="M8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4.5a.5.5 0 0 0 .5-.5v-4h2v4a.5.5 0 0 0 .5.5H14a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146zM2.5 14V7.707l5.5-5.5 5.5 5.5V14H10v-4a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5v4H2.5z"/>
+              </svg>
+            Página Inicial</a>
+    </div>
+    <hr>
+    <form method="POST" action="">
+        <div class="d-flex flex-row">
+            <div class="flex m-3">
+                <label for="">Escolha o período:</label>
+                <div>
+                    <label for="startdate">De: </label>
+                    <input type="date" name="startdate" id="startdate">
+                    <label for="enddate">Até: </label>
+                    <input type="date" name="enddate" id="enddate">
+                </div>
+
+            </div>
+            <div class="flex m-3">
+                <label for="">Escolha o TimeFrame:</label>
+                <div class="form-floating mb-2">
+                    <div class="btn-group">
+                        <input type="radio" class="btn-check" name="timeframe" id="option1" autocomplete="off" value="TimeFrame.Month"/>
+                        <label class="btn btn-outline-primary" for="option1">Month</label>
+                        <input type="radio" class="btn-check" name="timeframe" id="option2" autocomplete="off" value="TimeFrame.Week"/>
+                        <label class="btn btn-outline-primary" for="option2">Week</label>
+                        <input type="radio" class="btn-check" name="timeframe" id="option3" autocomplete="off" checked value="TimeFrame.Day"/>
+                        <label class="btn btn-outline-primary" for="option3">Day</label>
+                        <input type="radio" class="btn-check" name="timeframe" id="option4" autocomplete="off" value="TimeFrame.Hour"/>
+                        <label class="btn btn-outline-primary" for="option4">Hour</label>
+                        <input type="radio" class="btn-check" name="timeframe" id="option5" autocomplete="off" value="TimeFrame.Minute"/>
+                        <label class="btn btn-outline-primary" for="option5">Minute</label>
+                      </div>
+                    
+                </div>
+            </div>
+        </div>
+        <input type="submit" value="Import">
+        {% csrf_token %}
+    </form>
+    <hr>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <tr>
+                <th>ID</th>
+                <th>Nome do Asset</th>
+                <th>Data</th>
+                <th>Abertura</th>
+                <th>Máxima</th>
+                <th>Mínima</th>
+                <th>Fechamento</th>
+            </tr>
+            {% for price in object_list %}
+            <tr>
+                <td>{{ price.id }}</td>
+                <td>{{ price.date }}</td>
+                <td>{{ price.open }}</td>
+                <td>{{ price.high }}</td>
+                <td>{{ price.low }}</td>
+                <td>{{ price.close }}</td>
+                <td>
+                    <a href="{% url 'cadastro:Cotações' asset.id %}"" class="btn btn-danger btn-sm">Cotações</a>     
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3">Nenhum asset cadastrado.</td>
+            </tr>
+    
+            {% endfor %}
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}
+

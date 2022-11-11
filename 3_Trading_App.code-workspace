@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "3_Trading_App",
+			"path": "."
+		},
+		{
+			"name": "static",
+			"path": "../2_Imobiliaria/static"
+		}
+	],
+	"settings": {}
+}

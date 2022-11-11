@@ -1,0 +1,43 @@
+{% extends 'cadastro/base/modelo.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+<title>Escolher Assets para WatchList</title>
+{% endblock %}
+
+{% block menu %}
+{% include 'cadastro/base/menu.html' %}
+{% endblock %}
+
+{% block highlights %}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h3>Lista de Assets Cadastradas</h3>
+    
+    <form action="{% url 'cadastro:watchlist' %}" method="post">
+        <hr>
+        <input type="submit" class="btn btn-primary btn-sm" value={{ botao|default:'OK' }}>
+        {% csrf_token %}
+        {% for item in availableStocks %}
+        <div class="border mb-3 rounded-sm bg-light p-2">
+            <div class="custom-control custom-checkbox checkbox-info">
+                <input class="custom-control-input" type="checkbox" value="{{ item.id }}" id="{{ item.id }}" name="selected[]">
+                <label class="custom-control-label" for="{{ item.id }}" name="selected[]">{{ item.symbol }} - {{ item.name }}</label>
+            </div>
+        </div>
+        {% endfor %}
+
+    </form> 
+
+</div>
+{% endblock %}
+
+{% block footer %}
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}
+
