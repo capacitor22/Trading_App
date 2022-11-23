@@ -1,0 +1,114 @@
+{% extends 'cadastro/base/modelo.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+<title>{{titulo|default:'Formulário'}}</title>
+{% endblock %}
+
+{% block menu %}
+{% include 'cadastro/base/menu.html' %}
+{% endblock %}
+
+{% block highlights %}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h3>{{titulo|default:'Formulário'}}</h3>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr><h5>Account Information</h5></tr>
+                <tr>
+                    <th>Account Number</th>
+                    <th>Status</th>
+                    <th>Crypto Status</th>
+                    <th>Currency</th>
+                    <th>Cash</th>
+                    <th>Buying Power</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ account.account_number }}</td>
+                    <td>{{ account.status }}</td>
+                    <td>{{ account.crypto_status }}</td>
+                    <td>{{ account.currency }}</td>
+                    <td>{{ account.cash }}</td>
+                    <td>{{ account.buying_power }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table class="table">
+            <thead>
+                <tr><h5>Orders Information</h5></tr>
+                <tr>
+                    <th>symbol</th>
+                    <th>type</th>
+                    <th>qty</th>
+                    <th>Av Cost</th>
+                    <th>Amount</th>
+                    <th>status</th>
+                    <th>created_at</th>                    
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td>{{order.symbol}} - {{order.asset_class}}</td>
+                    <td>{{order.type}} {{order.side}} {{order.time_in_force}}</td>
+                    <td>{{ order.qty }}</td>
+                    <td>{{ order.qty }}</td>
+                    <td>{{ order.qty }}</td>
+                    <td>{{ order.status }}</td>
+                    <td>{{ order.created_at }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3">Nenhuma ordem pendente.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>   
+
+        <table class="table">
+            <thead>
+                <tr><h5>Positions Information</h5></tr>
+                <tr>
+                    <th>symbol - exchange (asset_class)</th>                    
+                    <th>qty</th>                    
+                    <th>side</th>                    
+                    <th>avg_entry_price</th>                    
+                    <th>current_price</th>                    
+                    <th>change_today</th>                    
+                </tr>
+            </thead>
+            <tbody>
+                {% for position in positions %}
+                <tr>
+                    <td>{{position.symbol}} - {{position.exchange}} ({{position.asset_class}})</td>                    
+                    <td>{{position.qty}}</td>                    
+                    <td>{{position.side}}</td>                    
+                    <td>{{position.avg_entry_price}}</td>                    
+                    <td>{{position.current_price}}</td>                    
+                    <td>{{position.change_today}}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3">Nenhuma posição no momento.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>        
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}

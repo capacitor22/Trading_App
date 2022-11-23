@@ -41,15 +41,15 @@
                 <label for="">Escolha o TimeFrame:</label>
                 <div class="form-floating mb-2">
                     <div class="btn-group">
-                        <input type="radio" class="btn-check" name="timeframe" id="option1" autocomplete="off" value="TimeFrame.Month"/>
+                        <input type="radio" class="btn-check" name="timeframe" id="option1" autocomplete="off" value="Month"/>
                         <label class="btn btn-outline-primary" for="option1">Month</label>
-                        <input type="radio" class="btn-check" name="timeframe" id="option2" autocomplete="off" value="TimeFrame.Week"/>
+                        <input type="radio" class="btn-check" name="timeframe" id="option2" autocomplete="off" value="Week"/>
                         <label class="btn btn-outline-primary" for="option2">Week</label>
-                        <input type="radio" class="btn-check" name="timeframe" id="option3" autocomplete="off" checked value="TimeFrame.Day"/>
+                        <input type="radio" class="btn-check" name="timeframe" id="option3" autocomplete="off" checked value="Day"/>
                         <label class="btn btn-outline-primary" for="option3">Day</label>
-                        <input type="radio" class="btn-check" name="timeframe" id="option4" autocomplete="off" value="TimeFrame.Hour"/>
+                        <input type="radio" class="btn-check" name="timeframe" id="option4" autocomplete="off" value="Hour"/>
                         <label class="btn btn-outline-primary" for="option4">Hour</label>
-                        <input type="radio" class="btn-check" name="timeframe" id="option5" autocomplete="off" value="TimeFrame.Minute"/>
+                        <input type="radio" class="btn-check" name="timeframe" id="option5" autocomplete="off" value="Minute"/>
                         <label class="btn btn-outline-primary" for="option5">Minute</label>
                       </div>
                     
@@ -64,24 +64,24 @@
         <table class="table table-striped">
             <tr>
                 <th>ID</th>
-                <th>Nome do Asset</th>
+                <th>TimeFrame</th>
                 <th>Data</th>
                 <th>Abertura</th>
                 <th>Máxima</th>
                 <th>Mínima</th>
                 <th>Fechamento</th>
+                <th>Volume</th>
             </tr>
-            {% for price in object_list %}
+            {% for price in prices %}
             <tr>
                 <td>{{ price.id }}</td>
+                <td>{{ price.timeframe }}</td>
                 <td>{{ price.date }}</td>
                 <td>{{ price.open }}</td>
                 <td>{{ price.high }}</td>
                 <td>{{ price.low }}</td>
                 <td>{{ price.close }}</td>
-                <td>
-                    <a href="{% url 'cadastro:Cotações' asset.id %}"" class="btn btn-danger btn-sm">Cotações</a>     
-                </td>
+                <td>{{ price.volume }}</td>
             </tr>
             {% empty %}
             <tr>

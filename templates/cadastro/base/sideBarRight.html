@@ -1,0 +1,18 @@
+<div class="sidebar bg-dark" id="side_nav">
+    <div class="header-box px-2 pt-2 pb-3">
+        <h3><span class="bg-white text-dark rounded shadow px-2 me-2">WatchList</span></h3>
+    </div>
+
+    <ul class="list-unstyled px-2">
+        {% for item in watchlist %}
+        <li class=""><a href="#" class="text-decoration-none px-1 py-1 d-block">{{item.stock.symbol}}</a></li>
+        {% endfor %}
+    </ul>
+    <hr class="h-color mx-3">
+    <!-- <ul class="list-unstyled px-2">
+        {% for item in stocks %}
+        <li class=""><a href="#" class="text-decoration-none px-1 py-1 d-block">{{item.symbol}}</a></li>
+        {% endfor %}
+    </ul> -->
+
+</div>

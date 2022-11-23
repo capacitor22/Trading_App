@@ -1,0 +1,204 @@
+{% extends 'paginas/modelo.html' %}
+
+{% load static %}
+
+{% block titulo %}
+<title>Dashboard - IAM</title>
+{% endblock %}
+
+{% block destaque %}
+{% include 'users/status_dashboard.html' %}
+{% endblock %}
+
+{% block conteudo %}
+<div class="container">
+    
+    <h3>Dashboard IAM - Usuário {{ user }} autorizado.</h3>
+    
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Usuários Cadastrados</h5>
+            <div class="card card-body">
+                <a class="btn btn-primary btn-sm mb-1" href="{% url 'users:registrar'%}">Criar Usuário</a>
+                
+                <table class="table table-sm">
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Nome Completo</th>
+                        <th>Grupos</th>
+                        <th>Opções</th>
+                    </tr>
+                    {% for usuario in usuarios %}
+                    <tr>
+                        <td>{{ usuario.id }}</td>
+                        <td>{{ usuario.username }}</td>
+                        <td>{{ usuario.email }}</td>
+                        <td>{{ usuario.perfil.nome_completo }}</td>
+                        <td>{{ usuario.groups.count }}</td>
+                        <td>
+                            <a href="{% url 'users:detalhe-usuario' usuario.id %}" class="btn btn-warning btn-sm">Editar</a> 
+                            <a href="{% url 'users:detalhe-usuario' usuario.id %}" class="btn btn-danger btn-sm">Excluir</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="row mb-3">
+        <hr>
+        <h4>Grupos e Permissões Customizadas</h4>
+        <div class="col-md-6">
+            <h5>Grupos Funcionais</h5>
+            <div class="card card-body">
+                <a class="btn btn-primary btn-sm" href="{% url 'users:criar-grupo-funcional' %}">Criar Grupo Funcional</a>
+                <table class="table table-sm">
+                    <tr>
+                        <th>Nome</th>
+                        <th># Permissões Funcionais</th>
+                        <th>Opções</th>
+                    </tr>
+                    {% for grupofuncional in gruposfuncionais %}
+                    <tr>
+                        <td>{{grupofuncional.nomeGrupo}}</td>
+                        <td>{{grupofuncional.permissoesfuncionais_set.count}}</td>
+                        <td>
+                            <a href="{% url 'users:editar-grupo-funcional' grupofuncional.id %}" class="btn btn-warning btn-sm">Editar</a> 
+                            <a href="{% url 'users:deletar-grupo-funcional' grupofuncional.id %}" class="btn btn-danger btn-sm">Excluir</a>                            
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <h5>Permissões Funcionais</h5>
+            <div class="card card-body">
+                <a class="btn btn-primary btn-sm" href="{% url 'users:criar-permissao-funcional' %}">Criar Permissão Funcional</a>
+                <table class="table table-sm">
+                    <tr>
+                        <th>Nome</th>
+                        <th># Grupos Funcionais</th>
+                        <th>Opções</th>
+                    </tr>
+
+                    {% for permissao in permissoesfuncionais %}
+                    <tr>
+                        <td>{{permissao.permissao}}</td>
+                        <td>{{permissao.gruposAssociados.count}}</td>
+                        <td>
+                            <a href="{% url 'users:editar-permissao-funcional' permissao.id %}" class="btn btn-warning btn-sm">Editar</a> 
+                            <a href="{% url 'users:deletar-permissao-funcional' permissao.id %}" class="btn btn-danger btn-sm">Excluir</a>                            
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3"">
+        <hr>
+        <div class="col-md-12">
+            <h5>Empresas</h5>
+            <div class="card card-body">
+                <a class="btn btn-primary btn-sm mb-1" href="{% url 'users:criar-empresa' %}">Criar Empresa</a>
+                
+                <table class="table table-sm">
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>CNPJ</th>
+                        <th>Nome Fantasia</th>
+                        <th>Logo</th>
+                        <th>Administrador</th>
+                    </tr>
+                    {% for empresa in empresas %}
+                    <tr>
+                        <td>{{ empresa.id }}</td>
+                        <td>{{ empresa.NomeEmpresa }}</td>
+                        <td>{{ empresa.CNPJ }}</td>
+                        <td>{{ empresa.NomeFantasia }}</td>
+                        <td>{{ empresa.Logo }}</td>
+                        <td>{{ empresa.Administrador }}</td>
+                        <td>
+                            <a href="{% url 'users:editar-empresa' empresa.id %}" class="btn btn-warning btn-sm">Editar</a> 
+                            <a href="{% url 'users:deletar-empresa' empresa.id %}" class="btn btn-danger btn-sm">Excluir</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="row mb-3"">
+        <hr>
+        <div class="col-md-12">
+            <h5>Funções</h5>
+            <div class="card card-body">
+                <a class="btn btn-primary btn-sm mb-1" href="{% url 'users:criar-funcao' %}">Criar Função</a>
+                
+                <table class="table table-sm">
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                    </tr>
+                    {% for funcao in funcoes %}
+                    <tr>
+                        <td>{{ funcao.id }}</td>
+                        <td>{{ funcao.NomeFuncao }}</td>
+                        <td>
+                            <a href="{% url 'users:editar-funcao' funcao.id %}" class="btn btn-warning btn-sm">Editar</a> 
+                            <a href="{% url 'users:deletar-funcao' funcao.id %}" class="btn btn-danger btn-sm">Excluir</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <hr>
+        <div class="col-md-12">
+            <h5>Relacionamento Usuário - Empresa - Função</h5>
+            <div class="card card-body">
+                <a class="btn btn-primary btn-sm mb-1" href="{% url 'users:criar-relacionamento' %}">Criar Relacionamento</a>
+                
+                <table class="table table-sm">
+                    <tr>
+                        <th>ID</th>
+                        <th>Usuário</th>
+                        <th>Empresa</th>
+                        <th>Função</th>
+                        <th>Início da Vigência</th>
+                        <th>Fim da Vigência</th>
+                    </tr>
+                    {% for relacionamento in relacionamentos %}
+                    <tr>
+                        <td>{{ relacionamento.id }}</td>
+                        <td>{{ relacionamento.User }}</td>
+                        <td>{{ relacionamento.Empresa }}</td>
+                        <td>{{ relacionamento.Funcao }}</td>
+                        <td>{{ relacionamento.DataInicioVigencia }}</td>
+                        <td>{{ relacionamento.DataFimVigencia }}</td>
+                        <td>
+                            <a href="{% url 'users:editar-relacionamento' relacionamento.id %}" class="btn btn-warning btn-sm">Editar</a> 
+                            <a href="{% url 'users:deletar-relacionamento' relacionamento.id %}" class="btn btn-danger btn-sm">Excluir</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

@@ -4,36 +4,37 @@ body {
     background-color: blanchedalmond;
     background-color: WhiteSmoke;
     background-color: bisque;
+    background-color: #eee;
+}
+
+hr.h-color{
+    background: #eee;
 }
 
 #corpo {
     margin-bottom: 10px;
 }
 
-#totalusuarios {
-    background-color: #4cb4c7;
-}
-
-#totalgrupos {
-    background-color: #4cb4c5;
-}
-
-#totalpermissoes {
-    background-color: #7abecc;
-}
-
-#saldoitau {
-    background-color: #4cb4c7;
-}
-
-#saldobradesco {
-    background-color: #4cb4c5;
-}
-
-#saldobb {
-    background-color: #7abecc;
-}
-
 #titulodestaque {
     text-align: center;
+}
+
+#corpoDashboard{
+    min-height: 100vh;
+    width: 100%;
+    /* background-color: #9A616D; */
+}
+
+.sidebar a{
+    font-size: 15px;
+    color: #818181;
+}
+
+.sidebar a:hover{
+    color: #f1f1f1;
+}
+
+.sidebar li.active{
+    background: #eee;
+    border-radius: 8px;
 }

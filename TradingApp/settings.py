@@ -41,8 +41,9 @@ INSTALLED_APPS = [
 
     'crispy_forms',
     'crispy_bootstrap5',
+    'django_plotly_dash.apps.DjangoPlotlyDashConfig',
 
-    'cadastro',
+    'cadastro.apps.CadastroConfig',
 ]
 
 # Adicionado Capacitor
@@ -57,6 +58,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_plotly_dash.middleware.BaseMiddleware',
 ]
 
 ROOT_URLCONF = 'TradingApp.urls'
@@ -138,3 +140,6 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 AUTH_USER_MODEL = 'cadastro.User'
 LOGIN_REDIRECT_URL = "cadastro:ShowAccount"
 LOGOUT_REDIRECT_URL = "cadastro:ShowAccount"
+
+#Para o django_plotly_dash
+X_FRAME_OPTIONS = 'SAMEORIGIN'

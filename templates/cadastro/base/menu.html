@@ -29,9 +29,11 @@
                     </ul>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'cadastro:watchlist' %}">Minha Watch List</a>
+                    <a class="nav-link" href="{% url 'cadastro:WatchList' %}">Minha Watch List</a>
                 </li>
-
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'cadastro:DashBoard' %}">DashBoard</a>
+                </li>
                 {% endif %}
             </ul>
             <form class="d-flex">
@@ -56,10 +58,10 @@
                     </li>
                     {% else %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'acesso:registrar' %}">Registrar</a>
+                        <a class="nav-link" href="{% url 'cadastro:registrar' %}">Registrar</a>
                     </li>  
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'acesso:login' %}">Login</a>
+                        <a class="nav-link" href="{% url 'cadastro:login' %}">Login</a>
                     </li>                       
                     {% endif %}
                 </ul>

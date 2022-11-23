@@ -1,0 +1,33 @@
+{% extends 'acesso/base/modelo.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+<title>Autenticação</title>
+{% endblock %}
+
+{% block menu %}
+{% endblock %}
+
+{% block highlights %}
+{% endblock %}
+
+{% block content %}
+<h2>{{titulo|default:'Página Genérica'}}</h2>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value={{ botao|default:'Login' }}>
+</form>
+
+<a href="{% url 'acesso:PainelInicial' %}">Voltar ao Painel Inicial</a>
+<a href="{% url 'acesso:password_reset' %}">Resetar password</a>
+<a href="{% url 'acesso:registrar' %}">Registrar Novo Usuário</a>
+{% endblock %}
+
+{% block footer %}
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}

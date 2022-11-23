@@ -32,9 +32,15 @@
     {% endblock %}
 
     {% block content %}
+
+    {% block sideBarLeft %}{% endblock %}
+    
     <div class="container" id="corpo">
         Codigo do conteudo
     </div>
+
+    {% block sideBarRight %}{% endblock %}
+
     {% endblock %}
 
     {% block footer %}

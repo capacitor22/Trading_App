@@ -1,0 +1,66 @@
+{% extends 'cadastro/base/modelo.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+<title>{{titulo|default:'Formulário'}}</title>
+{% endblock %}
+
+{% block menu %}
+{% include 'cadastro/base/menu.html' %}
+{% endblock %}
+
+{% block highlights %}
+{% endblock %}
+
+{% block content %}
+
+<div class="main-container d-flex">
+
+{% block sideBarLeft %}
+{% include 'cadastro/base/sideBarLeft.html ' %}
+{% endblock %}
+
+    <div id="corpoDashboard">
+        <h3>{{titulo|default:'Formulário'}}</h3>
+        
+        {% if chart %}
+        {{ chart|safe }}
+        {% endif %}
+
+        <hr>
+
+        {% if chart %}
+        {{chart|safe}}      
+        {% endif %}
+
+        {% if dic_charts %}
+            {% for key, value in dic_charts.items %}
+                <p>{{ key }}</p>
+                {{value|safe}}      
+            {% endfor %}
+
+        {% endif %}
+
+
+    </div>
+
+    {% block sideBarRight %}
+    
+    {% endblock %}
+
+</div>
+
+{% endblock %}
+
+{% block footer %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(".sidebar ul li").on('click' , function(){
+        $(".sidebar ul li.active").removeClass('active');
+        $(this).addClass('active');
+    })
+</script>
+{% endblock %}
