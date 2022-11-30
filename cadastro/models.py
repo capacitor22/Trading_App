@@ -43,6 +43,4 @@ class watch_list(models.Model):
 
     def __str__(self):
         return self.stock.symbol + ' - ' + self.stock.name
-    class Meta:
-        verbose_name = 'Tipo de Ator'
-        verbose_name_plural = 'Tipos de Atores'
+    

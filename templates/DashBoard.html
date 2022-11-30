@@ -1,6 +1,7 @@
 {% extends 'cadastro/base/modelo.html' %}
 {% load static %}
 {% load crispy_forms_tags %}
+{% load cadastro_tags %}
 
 {% block title %}
 <title>{{titulo|default:'Formulário'}}</title>
@@ -23,22 +24,37 @@
 
     <div id="corpoDashboard">
         <h3>{{titulo|default:'Formulário'}}</h3>
-        
-        {% if chart %}
-        {{ chart|safe }}
-        {% endif %}
-
         <hr>
-
         {% if chart %}
         {{chart|safe}}      
         {% endif %}
 
         {% if dic_charts %}
-            {% for key, value in dic_charts.items %}
-                <p>{{ key }}</p>
+        <div class="col-lg-9">
+            <div class="card-group mb-3">
+                {% for key, value in dic_charts.items %}
+                <div class="card mx-1">
                 {{value|safe}}      
+                </div>
+                {% if forloop.counter|divisibleby:"4" and not forloop.last %}
+            </div>
+            <div class="card-group mb-3">
+            {% endif %}
             {% endfor %}
+            
+            {% if dic_charts|length|remainder == 3 %}
+                <div class="card mx-1"></div>
+            {% elif dic_charts|length|remainder == 2 %}
+                <div class="card mx-1"></div>
+                <div class="card mx-1"></div>
+            {% elif dic_charts|length|remainder == 1 %}
+                <div class="card mx-1"></div>
+                <div class="card mx-1"></div>
+                <div class="card mx-1"></div>
+            {% endif %}
+
+            </div>
+        </div>
 
         {% endif %}
 

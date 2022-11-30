@@ -12,3 +12,10 @@ OBS: Dados para crypto
 BASE_URL = "https://paper-api.alpaca.markets"
 API_KEY = "xxxxxxxx"
 SECRET_KEY = "xxxxxxxx"
+
+{% if (dic_charts|length % 3) == 2 %}
+    <div class="card border-0"></div>
+{% elif (dic_charts|length % 3) == 1 %}
+    <div class="card border-0"></div>
+    <div class="card border-0"></div>
+{% endif %}

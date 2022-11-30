@@ -192,15 +192,16 @@ def DashBoard(request):
     lista_watchlist = watch_list.objects.filter(User=request.user)
     for item in lista_watchlist:
         prices = stock_price.objects.filter(stock=item.stock.id, timeframe='Day')
-
-        fig2 = go.Figure(data= [go.Candlestick(x=[c.date for c in prices],
-            open=[c.open for c in prices], high=[c.high for c in prices],
-            low=[c.low for c in prices], close=[c.close for c in prices])]
-            )       
-        fig2.update_layout(title={'font_size': 22, 'xanchor': 'center', 'x': 0.5})
-        fig2.update_layout(xaxis_rangeslider_visible=False)
-        fig2.update_layout(yaxis_title = "Price (USD)", xaxis_title = "Date" )
-        chart = fig2.to_html()
+        data=[go.Candlestick(x=[c.date for c in prices], open=[c.open for c in prices], 
+            high=[c.high for c in prices], low=[c.low for c in prices], close=[c.close for c in prices])]
+        layout=go.Layout(title=item.stock.symbol,
+                xaxis_rangeslider_visible=False,
+                yaxis_title = "Price (USD)", 
+                xaxis_title = "Date"
+                )
+        fig=go.Figure(data=data, layout=layout)
+        fig.update_layout(title={'font_size': 22, 'xanchor': 'center', 'x': 0.5})
+        chart = fig.to_html()
         dic_charts[item.id]=chart
     
     lista_stocks = stock.objects.all()
@@ -214,19 +215,19 @@ def ShowGraph(request, stock_id=None, tf=None):
         if tf==None:
             tf='Day'
         prices = stock_price.objects.filter(stock=stock_par, timeframe=tf)
-
         # Usando PLOTLY 
         data=[go.Candlestick(x=[c.date for c in prices], open=[c.open for c in prices], 
             high=[c.high for c in prices], low=[c.low for c in prices], close=[c.close for c in prices])]
         layout=go.Layout(title=stock_par.symbol,
                 xaxis_rangeslider_visible=False,
                 yaxis_title = "Price (USD)", 
+                xaxis_type = "category",
                 xaxis_title = "Date"
                 )
         fig=go.Figure(data=data, layout=layout)
+        
         fig.update_layout(title={'font_size': 22, 'xanchor': 'center', 'x': 0.5})
         chart=fig.to_html()
-
     else:
         prices = []
 
