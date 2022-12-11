@@ -46,3 +46,49 @@ def get_candleplot(prices):
     mpf.tight_layout()
     graph=get_candlegraph()
     return graph
+
+
+### Indicators
+def movingAverage(ma, prices):
+    sum = 0
+    if len(prices)<ma:
+        return None
+    else:
+        prices = prices[-ma:]
+        for i in range(1, ma):
+            sum += prices[i].close
+        return sum/ma
+
+
+### Trade Signs
+def is_bullish_candlestick(candle):
+    return candle.close > candle.open
+
+def is_bearish_engulfing(candles, index):
+    current_candle = candles[index]
+    previous_candle = candles[index-1]
+
+    if is_bullish_candlestick(previous_candle) \
+        and current_candle.close < previous_candle.open \
+        and current_candle.open > previous_candle.close:
+        return True
+    return False
+
+def is_bearisn_candlestick(candle):
+    return candle.close < candle.open
+
+def is_bullish_engulfing(candles, index):
+    current_candle = candles[index]
+    previous_candle = candles[index-1]
+
+    if is_bearisn_candlestick(previous_candle) \
+        and current_candle.close > previous_candle.open \
+        and current_candle.open < previous_candle.close:
+        return True
+    return False
+
+def deathCross():
+    pass
+
+def goldenCross():
+    pass

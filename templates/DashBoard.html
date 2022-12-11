@@ -26,19 +26,24 @@
         <h3>{{titulo|default:'Formulário'}}</h3>
         <hr>
         {% if chart %}
-        {{chart|safe}}      
+            {{chart|safe}}      
+            <form action="{% url 'cadastro:ShowGraph' stock_id tf %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success" >Update Indicators and Patterns</button>
+                <a href="" class="btn btn-light" >Limpar</a>
+            </form>
         {% endif %}
 
         {% if dic_charts %}
-        <div class="col-lg-9">
-            <div class="card-group mb-3">
+        <div class="col-lg-12">
+            <div class="card-group mb-1">
                 {% for key, value in dic_charts.items %}
                 <div class="card mx-1">
-                {{value|safe}}      
+                    {{value|safe}}
                 </div>
                 {% if forloop.counter|divisibleby:"4" and not forloop.last %}
             </div>
-            <div class="card-group mb-3">
+            <div class="card-group mb-2">
             {% endif %}
             {% endfor %}
             
@@ -67,6 +72,9 @@
 
 </div>
 
+{% include 'cadastro/modal/escolheAtivos.html' %}
+{% include 'cadastro/modal/escolheAtivosExclusao.html' %}
+
 {% endblock %}
 
 {% block footer %}
@@ -76,7 +84,23 @@
 <script>
     $(".sidebar ul li").on('click' , function(){
         $(".sidebar ul li.active").removeClass('active');
-        $(this).addClass('active');
-    })
+        $(this).addClass('active')});
 </script>
+
+{% if show_modal_stocks %}
+<script>
+    $(document).ready(function(){
+    $("#escolheAtivos").modal('show');
+    });    
+</script>
+{% endif %}
+
+{% if show_modal_watch %}
+<script>
+    $(document).ready(function(){
+    $("#escolheAtivosExclusao").modal('show');
+    });    
+</script>
+{% endif %}
+
 {% endblock %}

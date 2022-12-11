@@ -1,0 +1,51 @@
+<!-- Modal -->
+<div class="modal fade" id="escolheAtivos" tabindex="-1" aria-labelledby="escolheAtivosLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="escolheAtivosLabel">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                        class="bi bi-check2-square" viewBox="0 0 16 16">
+                        <path
+                            d="M3 14.5A1.5 1.5 0 0 1 1.5 13V3A1.5 1.5 0 0 1 3 1.5h8a.5.5 0 0 1 0 1H3a.5.5 0 0 0-.5.5v10a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5V8a.5.5 0 0 1 1 0v5a1.5 1.5 0 0 1-1.5 1.5H3z" />
+                        <path
+                            d="m8.354 10.354 7-7a.5.5 0 0 0-.708-.708L8 9.293 5.354 6.646a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0z" />
+                    </svg> Selecione a opção desejada:
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="container gap-1 mx-4">
+                <p>Escolha os ativos para incluir na WatchList.</p>
+            </div>
+            
+            <form action="" method="GET">
+                <input class="p-1" type="text" name="searchSymbol" id="searchSymbol">
+                <button type="submit" class="btn btn-success" >Buscar</button>
+                <a href="" class="btn btn-light" >Limpar</a>
+            </form>
+
+            <form action="" method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+
+                    <div class="container gap-1 mx-4">                        
+                        <h5>Escolha o ativo:</h5>
+                        <input type="hidden" name="acao" value="Incluir" id="acao">
+                        {% for ativo in stocks %}
+                        <div class="border mb-3 rounded-sm bg-light p-2">
+                            <div class="custom-control custom-checkbox checkbox-info">
+                                <input class="custom-control-input" type="checkbox" value="{{ ativo.id }}" id="{{ ativo.id }}" name="selected[]">
+                                <label class="custom-control-label" for="{{ ativo.id }}" name="selected[]">{{ ativo.symbol }} - {{ ativo.name }}</label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="container d-grid gap-2 mt-4 mb-4">
+                    <button type="submit" class="btn btn-primary">Incluir na WatchList</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
