@@ -15,7 +15,7 @@
 
 {% block content %}
 <div class="container">
-    <h3>WatchList - {{ request.user }}</h3>
+    <h3 class="row justify-content-center m-3">WatchList - {{ request.user }}</h3>
 
     <div class="menuLista">
         <a href="{% url 'cadastro:InserirWatchList' %}" class="btn btn-primary btn-sm">Inserir Stocks em WatchList</a>

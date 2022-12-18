@@ -14,8 +14,10 @@ import mplfinance as mpf
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import requests, json
 import tulipy as ti
+# import talib
 import numpy as np
 
 from config import *
@@ -40,7 +42,25 @@ def RegistrarUsuario(request):
         if form.is_valid():
             usuario = form.save()
             login(request, usuario)
-            return redirect(reverse_lazy("acesso:PainelInicial"))
+            return redirect(reverse_lazy("PaginaInicial.html"))
+
+def Inicio(request):
+    if request.user.is_authenticated:
+        account = requests.get(ACCOUNT_URL, headers=HEADERS)
+        # OBS: account é um dicionário mas os outros são listas de dicionarios, entao precisa adaptar
+        if account:
+            accout_json = account.json()
+        orders = requests.get(ORDERS_URL, headers=HEADERS)
+        if orders:
+            orders_json = orders.json()
+        positions = requests.get(POSITIONS_URL, headers=HEADERS)
+        if positions:
+            positions_json = positions.json()
+        context = {'titulo': 'Alpaca Account','account': accout_json, 'orders': orders_json, 'positions':positions_json}
+        return render(request, "PaginaInicial.html", context)
+    else:
+        return redirect(reverse_lazy("cadastro:login"))
+
 
 def AlpacaShowAccount(request):
     account = requests.get(ACCOUNT_URL, headers=HEADERS)
@@ -61,6 +81,56 @@ class ListStocks(LoginRequiredMixin, ListView):
     # login_url = reverse_lazy('acesso:login')
     model = stock
     template_name = 'cadastro/listas/stocks.html'
+
+
+def ImportStocksAlpaca(request):
+    api = tradeapi.REST(API_KEY, SECRET_KEY, base_url=BASE_URL)
+    assets = api.list_assets()
+    processed = active_and_tradable = imported = updated = 0
+
+    for asset in assets:
+        processed += 1
+        if asset.status == 'active' and asset.tradable:
+            active_and_tradable += 1
+            obj, created = stock.objects.update_or_create(
+                id_alpaca = asset.id,
+                defaults={
+                    'origin': 'Alpaca',
+                    # 'class_alpaca': asset.class,
+                    'easy_to_borrow': asset.easy_to_borrow, 'exchange': asset.exchange,
+                    'fractionable': asset.fractionable, 'id_alpaca': asset.id,
+                    'maintenance_margin_requirement': float(asset.maintenance_margin_requirement),
+                    'marginable': asset.marginable,
+                    # 'min_order_size': float(asset.min_order_size),
+                    # 'min_trade_increment': float(asset.min_trade_increment),
+                    'name': asset.name,
+                    # 'price_increment': float(asset.price_increment),
+                    'shortable': asset.shortable, 'status': asset.status,
+                    'symbol': asset.symbol, 'tradable': asset.tradable
+                },
+            )
+            if created:
+                imported += 1
+            else:
+                updated += 1
+    print('processed = ', processed)
+    print('active_and_tradable = ', active_and_tradable)
+    print('imported = ', imported)
+    print('updated = ', updated)
+    return redirect(reverse_lazy("cadastro:ListStocks"))
+
+
+def ListPrices(request, pk):
+    stock_obj = stock.objects.get(id=pk)
+    if request.POST:
+        start_date = request.POST.get('startdate', None)
+        end_date = request.POST.get('enddate', None)
+        timeframe = request.POST.get('timeframe', None)
+        if (start_date != None) and (end_date != None) and (timeframe != None):
+            UpdatePricesAlpaca([stock_obj.symbol], start_date, end_date, timeframe)
+    prices = stock_price.objects.filter(stock = pk)
+    context = {'prices':prices, 'stock': stock_obj}
+    return render(request, "cadastro/listas/prices.html", context)
 
 
 def UpdateIndicators(new_bar_ind, stock_ind, tf_ind):
@@ -148,171 +218,249 @@ def InsertBarsIntoDB(new_bars, new_timeframe):
 
 def UpdatePricesAlpacaOneStock(symbol, start_date=None, end_date=None, timeframe='ALL'):
     api = tradeapi.REST(API_KEY, SECRET_KEY, base_url=BASE_URL)    
-    bars = barsM = barsW = barsD = barsH = barsMin = None
+    bars = barsM = barsW = barsD = barsH = bars5Min = None
     today=date.today()
     yesterday=date.today()-timedelta(1)
     last_month=date.today()-timedelta(weeks=5)
     last_week=date.today()-timedelta(weeks=1)
     last_hour=date.today()-timedelta(hours=1)
     last_minute=date.today()-timedelta(minutes=1)
-    print('last_month',last_month)
-    print('last_week',last_week)
-    print('last_hour',last_hour)
-    print('last_minute',last_minute)
+    # print('last_month',last_month)
+    # print('last_week',last_week)
+    # print('last_hour',last_hour)
+    # print('last_minute',last_minute)
     td_month=timedelta(weeks = 900)
     td_week=timedelta(weeks = 201)
     td_day=timedelta(days = 260) # Descontando os FDS
     td_hour=timedelta(hours = 250)
     td_minute=timedelta(days = 2)
 
-    # td_month=timedelta(750)
-    # td_week=timedelta(200)
-    # td_day=timedelta(50)
-    # td_hour=timedelta(5)
-    # td_minute=timedelta(1)
-
-    thisStock = stock.objects.get(symbol=symbol[0])
+    thisStock = stock.objects.get(symbol=symbol[0])    
     
-    if start_date == None:
-        if timeframe == 'Month':
+    # Verificar se posso tirar a end date de todos os timeframes
+    # Ajustar as datas de inicio de cada opcao pois o month so esta pegando um mes enquanto as outras opcoes estao pegando 2
+
+
+    if timeframe == 'Month':
+        if start_date == None:
             last_month_bar_in_DB = stock_price.objects.filter(stock=thisStock, timeframe='Month').order_by('date').last()
             if last_month_bar_in_DB:
-                bars = api.get_bars(symbol, TimeFrame.Month, last_month_bar_in_DB.date, end_date, adjustment='raw' )
+                if last_month_bar_in_DB.date.date() >= yesterday:
+                    prev_month= last_month_bar_in_DB.date.date() - timedelta(weeks = 4)
+                    # bars = api.get_bars(symbol, TimeFrame.Month, prev_month, yesterday, adjustment='raw' )
+                    bars = api.get_bars(symbol, TimeFrame.Month, prev_month, adjustment='raw' )
+                else:
+                    # bars = api.get_bars(symbol, TimeFrame.Month, last_month_bar_in_DB.date.date(), yesterday, adjustment='raw' )
+                    bars = api.get_bars(symbol, TimeFrame.Month, last_month_bar_in_DB.date.date(), adjustment='raw' )
             else:
-                bars = api.get_bars(symbol, TimeFrame.Month, start_date, end_date, adjustment='raw' )
-        elif timeframe == 'Week':
-            # Week
+                # bars = api.get_bars(symbol, TimeFrame.Month, yesterday-td_month, yesterday, adjustment='raw' )
+                bars = api.get_bars(symbol, TimeFrame.Month, yesterday-td_month, adjustment='raw' )
+        else:
+            bars = api.get_bars(symbol, TimeFrame.Month, start_date, end_date, adjustment='raw' )
+
+    elif timeframe == 'Week':
+        # Week
+        if start_date == None:
             last_week_bar_in_DB = stock_price.objects.filter(stock=thisStock, timeframe='Week').order_by('date').last()
             if last_week_bar_in_DB:
-                bars = api.get_bars(symbol, TimeFrame.Week, last_week_bar_in_DB.date, yesterday, adjustment='raw' )
+                if last_week_bar_in_DB.date.date() >= yesterday:
+                    prev_week= last_week_bar_in_DB.date.date() - timedelta(weeks = 1)
+                    # bars = api.get_bars(symbol, TimeFrame.Week, prev_week, yesterday, adjustment='raw' )
+                    bars = api.get_bars(symbol, TimeFrame.Week, prev_week, adjustment='raw' )
+                else:
+                    # bars = api.get_bars(symbol, TimeFrame.Week, last_week_bar_in_DB.date.date(), yesterday, adjustment='raw' )
+                    bars = api.get_bars(symbol, TimeFrame.Week, last_week_bar_in_DB.date.date(), adjustment='raw' )
             else:
-                barsW = api.get_bars(symbol, TimeFrame.Week, yesterday-td_week, yesterday, adjustment='raw' )
-        elif timeframe == 'Day':
-            # Day
+                # bars = api.get_bars(symbol, TimeFrame.Week, yesterday-td_week, yesterday, adjustment='raw' )
+                bars = api.get_bars(symbol, TimeFrame.Week, yesterday-td_week, adjustment='raw' )
+        else:
+            bars = api.get_bars(symbol, TimeFrame.Week, start_date, end_date, adjustment='raw' )
+
+    elif timeframe == 'Day':
+        # Day
+        if start_date == None:
             last_day_bar_in_DB = stock_price.objects.filter(stock=thisStock, timeframe='Day').order_by('date').last()
+            print('Yesterday = ', yesterday)
             if last_day_bar_in_DB:
-                bars = api.get_bars(symbol, TimeFrame.Day, last_day_bar_in_DB.date, yesterday, adjustment='raw' )
+                print('Last = ', last_day_bar_in_DB.date.date())
+                if last_day_bar_in_DB.date.date() >= yesterday:
+                    prev_day = last_day_bar_in_DB.date.date() - timedelta(days = 1)
+                    print('Previous Day = ', prev_day)
+                    # barsD = api.get_bars(symbol, TimeFrame.Day, prev_day, yesterday, adjustment='raw' )
+                    bars = api.get_bars(symbol, TimeFrame.Day, prev_day, adjustment='raw' )                    
+                else:
+                    print('primeiro else - last day bar anterior ao yesterday')
+                    # bars = api.get_bars(symbol, TimeFrame.Day, last_day_bar_in_DB.date.date(), yesterday, adjustment='raw' )
+                    bars = api.get_bars(symbol, TimeFrame.Day, last_day_bar_in_DB.date.date(), adjustment='raw' )
             else:
-                barsD = api.get_bars(symbol, TimeFrame.Day, yesterday-td_day, yesterday, adjustment='raw' )
-        elif timeframe == 'Hour':
-            # Hour
+                print('segundo else - sem last day bar')
+                # bars = api.get_bars(symbol, TimeFrame.Day, yesterday-td_day, yesterday, adjustment='raw' )
+                bars = api.get_bars(symbol, TimeFrame.Day, yesterday-td_day, adjustment='raw' )
+        else:
+            print('Else sem barras anteriores')
+            bars = api.get_bars(symbol, TimeFrame.Day, start_date, end_date, adjustment='raw' ) 
+
+    elif timeframe == 'Hour':
+        # Hour
+        if start_date == None:
             last_hour_bar_in_DB = stock_price.objects.filter(stock=thisStock, timeframe='Hour').order_by('date').last()
             if last_hour_bar_in_DB:
-                bars = api.get_bars(symbol, TimeFrame.Hour, last_hour_bar_in_DB.date, yesterday, adjustment='raw' )
+                if last_hour_bar_in_DB.date.date() >= yesterday:    # Checar se posso substituit yesterday por now
+                    prev_hour= last_hour_bar_in_DB.date.date() - timedelta(days = 1)
+                    # bars = api.get_bars(symbol, TimeFrame.Hour, prev_hour, yesterday, adjustment='raw' )
+                    bars = api.get_bars(symbol, TimeFrame.Hour, prev_hour, adjustment='raw' )
+                else:
+                    # bars = api.get_bars(symbol, TimeFrame.Hour, last_hour_bar_in_DB.date.date(), yesterday, adjustment='raw' )
+                    bars = api.get_bars(symbol, TimeFrame.Hour, last_hour_bar_in_DB.date.date(), adjustment='raw' )
             else:
-                barsH = api.get_bars(symbol, TimeFrame.Hour, yesterday-td_hour, yesterday, adjustment='raw' )
-        elif timeframe == '5Minute':
-            # 5Minute
-            last_minute_bar_in_DB = stock_price.objects.filter(stock=thisStock, timeframe='Minute').order_by('date').last()
-            if last_minute_bar_in_DB:
-                bars = api.get_bars(symbol, TimeFrame.Minute, last_minute_bar_in_DB.date, yesterday, adjustment='raw' )
-            else:
-                barsMin = api.get_bars(symbol, TimeFrame.Minute, yesterday-td_minute, yesterday, adjustment='raw' )
-        
-        
-        elif timeframe == 'ALL':
+                # bars = api.get_bars(symbol, TimeFrame.Hour, yesterday-td_hour, yesterday, adjustment='raw' )
+                bars = api.get_bars(symbol, TimeFrame.Hour, yesterday-td_hour, adjustment='raw' )
+        else:
+            bars = api.get_bars(symbol, TimeFrame.Hour, start_date, end_date, adjustment='raw' )
 
-            # # Month
-            # print('month')
-            # last_month_bar_in_DB = stock_price.objects.filter(stock=thisStock, timeframe='Month').order_by('date').last()
-            # print('Yesterday = ', yesterday)
-            # if last_month_bar_in_DB:
-            #     print('Last = ', last_month_bar_in_DB.date.date())
-            #     # barsM = api.get_bars(symbol, TimeFrame.Month, last_month_bar_in_DB.date.date(), yesterday, adjustment='raw' )
-            #     if last_month_bar_in_DB.date.date() >= yesterday:
-            #         prev_month= last_month_bar_in_DB.date.date() - timedelta(weeks = 4)
-            #         print('Previous month = ', prev_month)
-            #         barsM = api.get_bars(symbol, TimeFrame.Month, prev_month, yesterday, adjustment='raw' )
-            #     else:
-            #         print('primeiro else - last month bar anterior ao yesterday')
-            #         barsM = api.get_bars(symbol, TimeFrame.Month, last_month_bar_in_DB.date.date(), yesterday, adjustment='raw' )
-            # else:
-            #     print('segundo else - sem last month bar')
-            #     print('Inicio = ', yesterday - td_month)
-            #     barsM = api.get_bars(symbol, TimeFrame.Month, yesterday-td_month, yesterday, adjustment='raw' )
-
-            # # Week
-            # print('Week')
-            # last_week_bar_in_DB = stock_price.objects.filter(stock=thisStock, timeframe='Week').order_by('date').last()
-            # print('Yesterday = ', yesterday)
-            # if last_week_bar_in_DB:
-            #     print('Last = ', last_week_bar_in_DB.date.date())
-            #     # barsW = api.get_bars(symbol, TimeFrame.Week, last_week_bar_in_DB.date.date(), yesterday, adjustment='raw' )
-            #     if last_week_bar_in_DB.date.date() >= yesterday:
-            #         prev_week= last_week_bar_in_DB.date.date() - timedelta(weeks = 1)
-            #         print('Previous week = ', prev_week)
-            #         barsW = api.get_bars(symbol, TimeFrame.Week, prev_week, yesterday, adjustment='raw' )
-            #     else:
-            #         print('primeiro else - last week bar anterior ao yesterday')
-            #         barsW = api.get_bars(symbol, TimeFrame.Week, last_week_bar_in_DB.date.date(), yesterday, adjustment='raw' )
-            # else:
-            #     print('segundo else - sem last week bar')
-            #     print('Inicio = ', yesterday - td_week)
-            #     barsW = api.get_bars(symbol, TimeFrame.Week, yesterday-td_week, yesterday, adjustment='raw' )
-
-            # # Day
-            # print('Day')
-            # last_day_bar_in_DB = stock_price.objects.filter(stock=thisStock, timeframe='Day').order_by('date').last()
-            # print('Yesterday = ', yesterday)
-            # if last_day_bar_in_DB:
-            #     print('Last = ', last_day_bar_in_DB.date.date())
-            #     if last_day_bar_in_DB.date.date() >= yesterday:
-            #         prev_day = last_day_bar_in_DB.date.date() - timedelta(days = 1)
-            #         print('Previous Day = ', prev_day)
-            #         barsD = api.get_bars(symbol, TimeFrame.Day, prev_day, yesterday, adjustment='raw' )
-            #     else:
-            #         print('primeiro else - last day bar anterior ao yesterday')
-            #         barsD = api.get_bars(symbol, TimeFrame.Day, last_day_bar_in_DB.date.date(), yesterday, adjustment='raw' )
-            # else:
-            #     print('segundo else - sem last day bar')
-            #     print('Inicio = ', yesterday - td_day)
-            #     barsD = api.get_bars(symbol, TimeFrame.Day, yesterday-td_day, yesterday, adjustment='raw' )
-
-            # # Hour
-            # print('Hour')            
-            # last_hour_bar_in_DB = stock_price.objects.filter(stock=thisStock, timeframe='Hour').order_by('date').last()
-            # print('Yesterday = ', yesterday)
-            # if last_hour_bar_in_DB:
-            #     print('Last = ', last_hour_bar_in_DB.date.date())
-            #     if last_hour_bar_in_DB.date.date() >= yesterday:    # Checar se posso substituit yesterday por now
-            #         prev_hour= last_hour_bar_in_DB.date.date() - timedelta(days = 1)
-            #         print('Previous Hour = ', prev_hour)
-            #         # barsH = api.get_bars(symbol, TimeFrame.Hour, prev_hour, today - timedelta(hours = 1), adjustment='raw' )
-            #         barsH = api.get_bars(symbol, TimeFrame.Hour, prev_hour, yesterday, adjustment='raw' )
-            #     else:
-            #         barsH = api.get_bars(symbol, TimeFrame.Hour, last_hour_bar_in_DB.date.date(), yesterday, adjustment='raw' )
-            # else:
-            #     barsH = api.get_bars(symbol, TimeFrame.Hour, yesterday-td_hour, yesterday, adjustment='raw' )
-            
-            # 5Minute
-            print('5Minute')
+    elif timeframe == '5Minute':
+        # 5Minute
+        if start_date == None:
             last_5minute_bar_in_DB = stock_price.objects.filter(stock=thisStock, timeframe='5Minute').order_by('date').last()
             print('Yesterday = ', yesterday)
             if last_5minute_bar_in_DB:
-                print('Last = ', last_minute_bar_in_DB.date.date())
+                print('Last = ', last_5minute_bar_in_DB.date.date())
                 if last_5minute_bar_in_DB.date.date() >= yesterday:
-                    prev_min= last_5minute_bar_in_DB.date.date()  - timedelta(days = 1)
+                    prev_min= last_5minute_bar_in_DB.date.date()  - timedelta(minutes = 1)
+                    # bars = api.get_bars(symbol, TimeFrame(5, TimeFrameUnit.Minute), prev_min, yesterday, adjustment='raw' )
                     print('Previous Minute = ', prev_min)
-                    # barsMin = api.get_bars(symbol, TimeFrame.Minute, prev_min, yesterday, adjustment='raw' )
-                    bars5Min = api.get_bars(symbol, TimeFrame(5, TimeFrameUnit.Minute), prev_min, yesterday, adjustment='raw' )
+                    bars = api.get_bars(symbol, TimeFrame(5, TimeFrameUnit.Minute), prev_min, adjustment='raw' )
                 else:
-                    bars5Min = api.get_bars(symbol, TimeFrame(5, TimeFrameUnit.Minute), last_5minute_bar_in_DB.date.date(), yesterday, adjustment='raw' )
+                    print('Primeiro Else - barra anterior ao yesterday')
+                    # bars = api.get_bars(symbol, TimeFrame(5, TimeFrameUnit.Minute), last_5minute_bar_in_DB.date.date(), yesterday, adjustment='raw' )
+                    bars = api.get_bars(symbol, TimeFrame(5, TimeFrameUnit.Minute), last_5minute_bar_in_DB.date.date(), adjustment='raw' )
             else:
                 print('segundo else - sem last 5Min bar')
-                print('Inicio = ', yesterday - td_minute)
-                bars5Min = api.get_bars(symbol, TimeFrame(5, TimeFrameUnit.Minute), yesterday-td_minute, yesterday, adjustment='raw' )
-                # print('BARS:')
-                # print(bars5Min)
-    # if bars:
-    #     InsertBarsIntoDB(bars, timeframe)
-    # if barsM:
-    #     InsertBarsIntoDB(barsM, 'Month')
-    # if barsW:
-    #     InsertBarsIntoDB(barsW, 'Week')
-    # if barsD:
-    #     InsertBarsIntoDB(barsD, 'Day')
-    # if barsH:
-    #     InsertBarsIntoDB(barsH, 'Hour')
+                # bars = api.get_bars(symbol, TimeFrame(5, TimeFrameUnit.Minute), yesterday-td_minute, yesterday, adjustment='raw' )
+                bars = api.get_bars(symbol, TimeFrame(5, TimeFrameUnit.Minute), yesterday-td_minute, adjustment='raw' )
+        else:
+            bars = api.get_bars(symbol, TimeFrame.Minute, start_date, end_date, adjustment='raw' )
+
+    elif timeframe == 'ALL':
+        # # Month
+        if start_date == None:
+            last_month_bar_in_DB = stock_price.objects.filter(stock=thisStock, timeframe='Month').order_by('date').last()
+            # print('Yesterday = ', yesterday)
+            if last_month_bar_in_DB:
+                # print('Last = ', last_month_bar_in_DB.date.date())
+                if last_month_bar_in_DB.date.date() >= yesterday:
+                    prev_month= last_month_bar_in_DB.date.date() - timedelta(weeks = 4)
+                    # print('Previous month = ', prev_month)
+                    # barsM = api.get_bars(symbol, TimeFrame.Month, prev_month, yesterday, adjustment='raw' )
+                    barsM = api.get_bars(symbol, TimeFrame.Month, prev_month, adjustment='raw' )
+                else:
+                    # print('primeiro else - last month bar anterior ao yesterday')
+                    # barsM = api.get_bars(symbol, TimeFrame.Month, last_month_bar_in_DB.date.date(), yesterday, adjustment='raw' )
+                    barsM = api.get_bars(symbol, TimeFrame.Month, last_month_bar_in_DB.date.date(), adjustment='raw' )
+            else:
+                # print('segundo else - sem last month bar')
+                # barsM = api.get_bars(symbol, TimeFrame.Month, yesterday-td_month, yesterday, adjustment='raw' )
+                barsM = api.get_bars(symbol, TimeFrame.Month, yesterday-td_month, adjustment='raw' )
+        else:
+            barsM = api.get_bars(symbol, TimeFrame.Month, start_date, end_date, adjustment='raw' )
+
+        # Week
+        if start_date == None:
+            last_week_bar_in_DB = stock_price.objects.filter(stock=thisStock, timeframe='Week').order_by('date').last()
+            # print('Yesterday = ', yesterday)
+            if last_week_bar_in_DB:
+                # print('Last = ', last_week_bar_in_DB.date.date())
+                if last_week_bar_in_DB.date.date() >= yesterday:
+                    prev_week= last_week_bar_in_DB.date.date() - timedelta(weeks = 1)
+                    # print('Previous week = ', prev_week)
+                    # barsW = api.get_bars(symbol, TimeFrame.Week, prev_week, yesterday, adjustment='raw' )
+                    barsW = api.get_bars(symbol, TimeFrame.Week, prev_week, adjustment='raw' )
+                else:
+                    # print('primeiro else - last week bar anterior ao yesterday')
+                    # barsW = api.get_bars(symbol, TimeFrame.Week, last_week_bar_in_DB.date.date(), yesterday, adjustment='raw' )
+                    barsW = api.get_bars(symbol, TimeFrame.Week, last_week_bar_in_DB.date.date(), adjustment='raw' )
+            else:
+                # print('segundo else - sem last week bar')
+                # barsW = api.get_bars(symbol, TimeFrame.Week, yesterday-td_week, yesterday, adjustment='raw' )
+                barsW = api.get_bars(symbol, TimeFrame.Week, yesterday-td_week, adjustment='raw' )
+        else:
+            barsW = api.get_bars(symbol, TimeFrame.Week, start_date, end_date, adjustment='raw' )
+
+        # Day
+        if start_date == None:
+            last_day_bar_in_DB = stock_price.objects.filter(stock=thisStock, timeframe='Day').order_by('date').last()
+            print('Yesterday = ', yesterday)
+            if last_day_bar_in_DB:
+                print('Last = ', last_day_bar_in_DB.date.date())
+                if last_day_bar_in_DB.date.date() >= yesterday:
+                    print('entrei')
+                    prev_day = last_day_bar_in_DB.date.date() - timedelta(days = 1)
+                    print('Previous Day = ', prev_day)
+                    # barsD = api.get_bars(symbol, TimeFrame.Day, prev_day, yesterday, adjustment='raw' )
+                    barsD = api.get_bars(symbol, TimeFrame.Day, prev_day, adjustment='raw' )
+                else:
+                    print('primeiro else - last day bar anterior ao yesterday')
+                    # barsD = api.get_bars(symbol, TimeFrame.Day, last_day_bar_in_DB.date.date(), yesterday, adjustment='raw' )
+                    barsD = api.get_bars(symbol, TimeFrame.Day, last_day_bar_in_DB.date.date(), adjustment='raw' )
+            else:
+                print('segundo else - sem last day bar')
+                # barsD = api.get_bars(symbol, TimeFrame.Day, yesterday-td_day, yesterday, adjustment='raw' )
+                barsD = api.get_bars(symbol, TimeFrame.Day, yesterday-td_day, adjustment='raw' )
+        else:
+            print('Else sem barras anteriores')
+            barsD = api.get_bars(symbol, TimeFrame.Day, start_date, end_date, adjustment='raw' )
+
+        # Hour
+        if start_date == None:
+            last_hour_bar_in_DB = stock_price.objects.filter(stock=thisStock, timeframe='Hour').order_by('date').last()
+            # print('Yesterday = ', yesterday)
+            if last_hour_bar_in_DB:
+                # print('Last = ', last_hour_bar_in_DB.date.date())
+                if last_hour_bar_in_DB.date.date() >= yesterday:    # Checar se posso substituit yesterday por now
+                    prev_hour= last_hour_bar_in_DB.date.date() - timedelta(days = 1)
+                    # print('Previous Hour = ', prev_hour)
+                    # barsH = api.get_bars(symbol, TimeFrame.Hour, prev_hour, yesterday, adjustment='raw' )
+                    barsH = api.get_bars(symbol, TimeFrame.Hour, prev_hour, adjustment='raw' )
+                else:
+                    # barsH = api.get_bars(symbol, TimeFrame.Hour, last_hour_bar_in_DB.date.date(), yesterday, adjustment='raw' )
+                    barsH = api.get_bars(symbol, TimeFrame.Hour, last_hour_bar_in_DB.date.date(), adjustment='raw' )
+            else:
+                # barsH = api.get_bars(symbol, TimeFrame.Hour, yesterday-td_hour, yesterday, adjustment='raw' )
+                barsH = api.get_bars(symbol, TimeFrame.Hour, yesterday-td_hour, adjustment='raw' )
+        else:
+            barsH = api.get_bars(symbol, TimeFrame.Hour, start_date, end_date, adjustment='raw' )
+
+        # 5Minute
+        if start_date == None:
+            last_5minute_bar_in_DB = stock_price.objects.filter(stock=thisStock, timeframe='5Minute').order_by('date').last()
+            # print('Yesterday = ', yesterday)
+            if last_5minute_bar_in_DB:
+                # print('Last = ', last_5minute_bar_in_DB.date.date())
+                if last_5minute_bar_in_DB.date.date() >= yesterday:
+                    prev_min= last_5minute_bar_in_DB.date.date()  - timedelta(days = 1)
+                    # print('Previous Minute = ', prev_min)
+                    # bars5Min = api.get_bars(symbol, TimeFrame(5, TimeFrameUnit.Minute), prev_min, yesterday, adjustment='raw' )
+                    bars5Min = api.get_bars(symbol, TimeFrame(5, TimeFrameUnit.Minute), prev_min, adjustment='raw' )
+                else:
+                    # bars5Min = api.get_bars(symbol, TimeFrame(5, TimeFrameUnit.Minute), last_5minute_bar_in_DB.date.date(), yesterday, adjustment='raw' )
+                    bars5Min = api.get_bars(symbol, TimeFrame(5, TimeFrameUnit.Minute), last_5minute_bar_in_DB.date.date(), adjustment='raw' )
+            else:
+                # print('segundo else - sem last 5Min bar')
+                # bars5Min = api.get_bars(symbol, TimeFrame(5, TimeFrameUnit.Minute), yesterday-td_minute, yesterday, adjustment='raw' )
+                bars5Min = api.get_bars(symbol, TimeFrame(5, TimeFrameUnit.Minute), yesterday-td_minute, adjustment='raw' )
+        else:
+            bars5Min = api.get_bars(symbol, TimeFrame(5, TimeFrameUnit.Minute), start_date, end_date, adjustment='raw' )
+
+    if bars:
+        InsertBarsIntoDB(bars, timeframe)
+    if barsM:
+        InsertBarsIntoDB(barsM, 'Month')
+    if barsW:
+        InsertBarsIntoDB(barsW, 'Week')
+    if barsD:
+        InsertBarsIntoDB(barsD, 'Day')
+    if barsH:
+        InsertBarsIntoDB(barsH, 'Hour')
     if bars5Min:
         InsertBarsIntoDB(bars5Min, '5Minute')    
 
@@ -327,18 +475,20 @@ def UpdatePricesAlpaca(symbols, start_date=None, end_date=None, timeframe='ALL')
     td_day=timedelta(50)
     td_hour=timedelta(5)
     td_minute=timedelta(1)
+    print(timeframe)
+    print(symbols)
     for i in range(0, len(symbols), chunk_size):
         symbol_chunk = symbols[i:i+chunk_size]
         if timeframe == 'Month':
-            bars = api.get_bars(symbol_chunk, TimeFrame.Month, start_date, end_date, adjustment='raw' )
+            bars = api.get_bars(symbol_chunk, TimeFrame.Month, yesterday-td_month, yesterday, adjustment='raw' )
         elif timeframe == 'Week':
-            bars = api.get_bars(symbol_chunk, TimeFrame.Week, start_date, end_date, adjustment='raw' )
+            bars = api.get_bars(symbol_chunk, TimeFrame.Week, yesterday-td_week, yesterday, adjustment='raw' )
         elif timeframe == 'Day':
-            bars = api.get_bars(symbol_chunk, TimeFrame.Day, start_date, end_date, adjustment='raw' )
+            bars = api.get_bars(symbol_chunk, TimeFrame.Day, yesterday-td_day, yesterday, adjustment='raw' )
         elif timeframe == 'Hour':
-            bars = api.get_bars(symbol_chunk, TimeFrame.Hour, start_date, end_date, adjustment='raw' )
+            bars = api.get_bars(symbol_chunk, TimeFrame.Hour, yesterday-td_hour, yesterday, adjustment='raw' )
         elif timeframe == '5Minute':
-            bars = api.get_bars(symbol_chunk, TimeFrame(5, TimeFrameUnit.Minute), start_date, end_date, adjustment='raw' )
+            bars = api.get_bars(symbol_chunk, TimeFrame(5, TimeFrameUnit.Minute), yesterday-td_minute, yesterday, adjustment='raw' )
         elif timeframe == 'ALL':
             barsM = api.get_bars(symbol_chunk, TimeFrame.Month, yesterday-td_month, yesterday, adjustment='raw' )
             barsW = api.get_bars(symbol_chunk, TimeFrame.Week, yesterday-td_week, yesterday, adjustment='raw' )
@@ -374,9 +524,10 @@ def WatchList(request, id=None):
         pass
         # Chamar o mesmo form habilitando a MODAL
     lista = watch_list.objects.filter(User=request.user)
-    list_stocks = [item.stock.symbol for item in lista]
-    # Desabilitar se não quiser a atualizacao dos preços sempre que entrar na watchlist
-    UpdatePricesAlpaca(list_stocks, 'Day')
+    # list_stocks = [item.stock.symbol for item in lista]
+    # UpdatePricesAlpaca(list_stocks, timeframe='Day')
+    for item in lista:
+        UpdatePricesAlpacaOneStock([item.stock.symbol], timeframe='Day')
     context = {'watchlist':lista}
     return render(request, "cadastro/listas/watchlist.html", context)
 
@@ -388,41 +539,6 @@ def InserirWatchList(request):
 def RemoverWatchList(request, pk):
     pass
 
-def ImportStocksAlpaca(request):
-    api = tradeapi.REST(API_KEY, SECRET_KEY, base_url=BASE_URL)
-    assets = api.list_assets()
-    processed = active_and_tradable = imported = updated = 0
-
-    for asset in assets:
-        processed += 1
-        if asset.status == 'active' and asset.tradable:
-            active_and_tradable += 1
-            obj, created = stock.objects.update_or_create(
-                id_alpaca = asset.id,
-                defaults={
-                    'origin': 'Alpaca',
-                    # 'class_alpaca': asset.class,
-                    'easy_to_borrow': asset.easy_to_borrow, 'exchange': asset.exchange,
-                    'fractionable': asset.fractionable, 'id_alpaca': asset.id,
-                    'maintenance_margin_requirement': float(asset.maintenance_margin_requirement),
-                    'marginable': asset.marginable,
-                    # 'min_order_size': float(asset.min_order_size),
-                    # 'min_trade_increment': float(asset.min_trade_increment),
-                    'name': asset.name,
-                    # 'price_increment': float(asset.price_increment),
-                    'shortable': asset.shortable, 'status': asset.status,
-                    'symbol': asset.symbol, 'tradable': asset.tradable
-                },
-            )
-            if created:
-                imported += 1
-            else:
-                updated += 1
-    print('processed = ', processed)
-    print('active_and_tradable = ', active_and_tradable)
-    print('imported = ', imported)
-    print('updated = ', updated)
-    return redirect(reverse_lazy("cadastro:ListStocks"))
 
 def DashBoard(request):
     
@@ -475,42 +591,118 @@ def DashBoard(request):
 def ShowGraph(request, stock_id=None, tf=None):
     if stock_id:
         stock_par=stock.objects.get(pk=stock_id)
-        UpdatePricesAlpacaOneStock([stock_par.symbol])  # Precisa ser uma lista, mesmo que unitária, para que a API responda como esperado
+        if request.POST:
+            tf = request.POST.get('timeframe', None)
         if tf==None:
             tf='Day'
+        UpdatePricesAlpacaOneStock([stock_par.symbol], timeframe=tf)  # Precisa ser uma lista, mesmo que unitária, para que a API responda como esperado
         prices = stock_price.objects.filter(stock=stock_par, timeframe=tf)
-        # Usando PLOTLY 
-        data=[go.Candlestick(x=[c.date for c in prices], open=[c.open for c in prices], high=[c.high for c in prices], low=[c.low for c in prices], close=[c.close for c in prices]),
-            go.Line(x=[c.date for c in prices], y=[c.ma200 for c in prices],),
-            go.Line(x=[c.date for c in prices], y=[c.ma50 for c in prices],),
-            go.Line(x=[c.date for c in prices], y=[c.ma20 for c in prices],),
-            go.Line(x=[c.date for c in prices], y=[c.ma9 for c in prices],),
-            ]
-        layout=go.Layout(title=stock_par.symbol,
-                xaxis_rangeslider_visible=False,                
-                autosize=False,
-                width=1000,
-                height=700,
-                # margin=dict(l=5,r=5,b=5,t=50,pad=5)                
-                yaxis_title = "Price (USD)", 
-                xaxis_type = "category",
-                xaxis_title = "Date"
-                )
-        fig=go.Figure(data=data, layout=layout)
-        
-        fig.update_layout(title={'font_size': 22, 'xanchor': 'center', 'x': 0.5})
-        chart=fig.to_html()
-    else:
-        prices = []
 
-    if request.POST:
-        # UpdatePricesAlpaca([stock_par.symbol])
-        # UpdatePricesAlpacaOneStock([stock_par.symbol])  # Precisa ser uma lista, mesmo que unitária, para que a API responda como esperado
+        # Calculando padrões
         for i in range(1, len(prices)):
             if is_bullish_engulfing(prices, i):
                 print('{}It is a bullish engolfing'.format(prices[i].date))
             if is_bearish_engulfing(prices, i):
                 print('{}It is a bearish engolfing'.format(prices[i].date))
+
+        # Usando PLOTLY 
+        if tf == 'Hour' or tf == '5Minute':
+            candles=[go.Candlestick(x=[c.date for c in prices], open=[c.open for c in prices], high=[c.high for c in prices], low=[c.low for c in prices], close=[c.close for c in prices]),
+                go.Scatter(x=[c.date for c in prices], y=[c.ma20 for c in prices], name = 'mm20',),
+                go.Scatter(x=[c.date for c in prices], y=[c.ma50 for c in prices], name = 'mm50',),
+                go.Scatter(x=[c.date for c in prices], y=[c.ma9 for c in prices], name = 'mm9',),
+                go.Scatter(x=[c.date for c in prices], y=[c.ma200 for c in prices], name = 'mm200',),
+                ]
+            volume_bars = go.Bar(
+                x=[c.date for c in prices],
+                y=[c.volume for c in prices],
+                showlegend=False,
+                marker={
+                    "color": "rgba(128,128,128,0.5)",
+                }
+            )
+        else:        
+            candles=[go.Candlestick(x=[c.date.date() for c in prices], open=[c.open for c in prices], high=[c.high for c in prices], low=[c.low for c in prices], close=[c.close for c in prices]),
+                go.Scatter(x=[c.date.date() for c in prices], y=[c.ma20 for c in prices], name = 'mm20',),
+                go.Scatter(x=[c.date.date() for c in prices], y=[c.ma50 for c in prices], name = 'mm50',),
+                go.Scatter(x=[c.date.date() for c in prices], y=[c.ma9 for c in prices], name = 'mm9',),
+                go.Scatter(x=[c.date.date() for c in prices], y=[c.ma200 for c in prices], name = 'mm200',),
+                ]
+            volume_bars = go.Bar(
+                x=[c.date.date() for c in prices],
+                y=[c.volume for c in prices],
+                showlegend=False,
+                marker={
+                    "color": "rgba(128,128,128,0.5)",
+                }
+            )
+
+        layout=go.Layout(title=stock_par.symbol,
+                xaxis_rangeslider_visible=False,                
+                autosize=False,
+                width=1300,
+                height=650,
+                # margin=dict(l=5,r=5,b=5,t=50,pad=5)                
+                yaxis_title = "Price (USD)", 
+                # xaxis_type = "category",
+                xaxis_title = "Date"
+                )
+        fig=go.Figure(data=candles, layout=layout)
+        fig.update_layout(title={'font_size': 22, 'xanchor': 'center', 'x': 0.5})
+
+        figure = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.7, 0.3], vertical_spacing = 0)
+        figure.add_trace(go.Candlestick(x=[c.date.date() for c in prices], open=[c.open for c in prices], high=[c.high for c in prices], 
+            low=[c.low for c in prices], close=[c.close for c in prices]), row=1, col=1)
+        figure.add_trace(go.Scatter(x=[c.date.date() for c in prices], y=[c.ma20 for c in prices], name = 'mm20',), row=1, col=1)
+        figure.add_trace(go.Scatter(x=[c.date.date() for c in prices], y=[c.ma50 for c in prices], name = 'mm50',), row=1, col=1)
+        figure.add_trace(go.Scatter(x=[c.date.date() for c in prices], y=[c.ma9 for c in prices], name = 'mm9',), row=1, col=1)
+        figure.add_trace(go.Scatter(x=[c.date.date() for c in prices], y=[c.ma200 for c in prices], name = 'mm200',), row=1, col=1)
+        figure.add_trace(go.Bar(x=[c.date.date() for c in prices], y=[c.volume for c in prices], showlegend=False, marker_color='#ef5350'), row=2, col=1)
+        figure.update(layout_xaxis_rangeslider_visible=False)
+        figure.update(layout_title=stock_par.symbol)
+        figure.update(layout_autosize=False)
+        figure.update(layout_width=1300)
+        figure.update(layout_height=650)
+        figure.update_yaxes(title_text=f'Volume', row=2, col=1)
+        
+        figure.update_yaxes(title="Price $", row=1, col=1, showgrid=True)
+        figure.update_yaxes(title="Volume $", row=2, col=1, showgrid=False)
+        figure.update_xaxes(title_text='Date', type = "category", row=2)
+        figure.update_layout(title={'font_size': 22, 'xanchor': 'center', 'x': 0.5})
+
+        # figure = make_subplots(specs=[[{"secondary_y": True}]])
+        # figure.add_trace(go.Candlestick(x=[c.date.date() for c in prices], open=[c.open for c in prices], high=[c.high for c in prices], 
+        #     low=[c.low for c in prices], close=[c.close for c in prices]), secondary_y=True)
+        # figure.add_trace(go.Scatter(x=[c.date.date() for c in prices], y=[c.ma20 for c in prices], name = 'mm20',), secondary_y=True)
+        # figure.add_trace(go.Scatter(x=[c.date.date() for c in prices], y=[c.ma50 for c in prices], name = 'mm50',), secondary_y=True)
+        # figure.add_trace(go.Scatter(x=[c.date.date() for c in prices], y=[c.ma9 for c in prices], name = 'mm9',), secondary_y=True)
+        # figure.add_trace(go.Scatter(x=[c.date.date() for c in prices], y=[c.ma200 for c in prices], name = 'mm200',), secondary_y=True)
+        # figure.add_trace(go.Bar(x=[c.date.date() for c in prices], y=[c.volume for c in prices], showlegend=False, marker={"color": "rgba(128,128,128,0.5)",}), secondary_y=False)
+        # figure.update(layout_xaxis_rangeslider_visible=False)
+        # figure.update(layout_title=stock_par.symbol)
+        # figure.update(layout_autosize=False)
+        # figure.update(layout_width=1300)
+        # figure.update(layout_height=650)
+        # figure.update_yaxes(title="Price $", secondary_y=True, showgrid=True)
+        # figure.update_yaxes(title="Volume $", secondary_y=False, showgrid=False)
+        # figure.update_xaxes(title_text='Date', type = "category")
+        # figure.update_layout(title={'font_size': 22, 'xanchor': 'center', 'x': 0.5})
+
+        
+
+
+        # logica para povoar o dt_breaks. Se quiser tratar as datas do eixo x como datas realmente, preciso retuirar o xaxis_type = category e implamenar uma logica como essa
+        # fig.update_xaxes(rangebreaks=[dict(values=dt_breaks)]) # hide dates with no values
+
+        # chart=fig.to_html()
+
+        chart=figure.to_html()
+
+
+    else:
+
+        prices = []
+
 
     lista_watchlist = watch_list.objects.filter(User=request.user)
     lista_stocks = stock.objects.all()
@@ -518,17 +710,6 @@ def ShowGraph(request, stock_id=None, tf=None):
     return render(request, "DashBoard.html", context)
 
 
-def ListPrices(request, pk):
-    stock_obj = stock.objects.get(id=pk)
-    if request.POST:
-        start_date = request.POST.get('startdate', None)
-        end_date = request.POST.get('enddate', None)
-        timeframe = request.POST.get('timeframe', None)
-        if (start_date != None) and (end_date != None) and (timeframe != None):
-            UpdatePricesAlpaca([stock_obj.symbol], start_date, end_date, timeframe)
-    prices = stock_price.objects.filter(stock = pk)
-    context = {'prices':prices, 'stock': stock_obj}
-    return render(request, "cadastro/listas/prices.html", context)
 
 def twChart(request, exchange, stock):
     exchange = exchange

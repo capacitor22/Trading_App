@@ -139,7 +139,7 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') 
 AUTH_USER_MODEL = 'cadastro.User'
 LOGIN_REDIRECT_URL = "cadastro:ShowAccount"
-LOGOUT_REDIRECT_URL = "cadastro:ShowAccount"
+LOGOUT_REDIRECT_URL = "cadastro:login"
 
 #Para o django_plotly_dash
 X_FRAME_OPTIONS = 'SAMEORIGIN'

@@ -46,6 +46,8 @@ class stock_price(models.Model):
     bbl = models.DecimalField(max_digits=15, decimal_places=5, null=True, blank=True)
     def __str__(self):
         return self.stock.symbol + ' - ' + self.timeframe + ' - ' + self.date.strftime("%d-%m-%Y %H:%M:%S")
+    # class Meta:
+    #     ordering = ['-date','timeframe'] 
 
 class watch_list(models.Model):
     User = models.ForeignKey(User, on_delete=models.CASCADE)

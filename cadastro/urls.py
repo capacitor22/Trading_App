@@ -1,11 +1,11 @@
 from django.urls import path, reverse_lazy
-from .views import ShowGraph, DashBoard, twChart, RemoverWatchList, InserirWatchList, WatchList, AlpacaShowAccount, ImportStocksAlpaca, UpdatePricesAlpaca, ListStocks, ListPrices, RegistrarUsuario
+from .views import Inicio, ShowGraph, DashBoard, twChart, RemoverWatchList, InserirWatchList, WatchList, AlpacaShowAccount, ImportStocksAlpaca, UpdatePricesAlpaca, ListStocks, ListPrices, RegistrarUsuario
 from django.contrib.auth import views as auth_views
 
 app_name = "cadastro"
 
 urlpatterns = [
-    path('', AlpacaShowAccount, name='PainelInicial'),
+    path('', Inicio, name='PainelInicial'),
     path('ShowAccount', AlpacaShowAccount, name='ShowAccount'),
     path('ListStocks', ListStocks.as_view(), name='ListStocks'),
     path('ImportStocksAlpaca', ImportStocksAlpaca, name='ImportStocksAlpaca'),

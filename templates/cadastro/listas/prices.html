@@ -11,12 +11,12 @@
 {% endblock %}
 
 {% block highlights %}
-<h3>{{stock.symbol}} - {{stock.name}}</h3>
+<h3 class="row justify-content-center m-3">{{stock.symbol}} - {{stock.name}}</h3>
 {% endblock %}
 
 {% block content %}
 <div class="container">
-    <h3>Lista de Preços</h3>
+    <h3 class="row justify-content-center">Lista de Preços</h3>
     <div class="menuLista">
         <a href="{% url 'cadastro:PainelInicial' %}" class="btn btn-secondary btn-sm">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-house-door" viewBox="0 0 16 16">

@@ -22,33 +22,30 @@
         <div class="card" style="border-radius: 1rem;">
           <div class="row g-0">
             <div class="col-md-6 col-lg-5 d-none d-md-block">
-              <img src="{% static 'img/keys.jpg' %}"
-                alt="login form" height="650" width="450" style="border-radius: 1rem 0 0 1rem;" />
+              <img src="{% static 'img/stockbroker-shirt-is-working-monitoring-room-with-display-screens-stock-exchange-trading-forex-finance-graphic-concept-businessmen-trading-stocks-online_9277159.jpg' %}"
+                alt="login form" height="300" width="450" style="border-radius: 1rem 0 0 1rem;" />
+              <a href="https://www.freepik.com/free-photo/stockbroker-shirt-is-working-monitoring-room-with-display-screens-stock-exchange-trading-forex-finance-graphic-concept-businessmen-trading-stocks-online_9277159.htm#query=graphic%20stock&position=9&from_view=keyword" class="small text-muted">Image by standret</a> on Freepik
+              <ul>
+                <li>Watch Lists personalizadas</li>
+                <li>Gráficos em vários Timeframes</li>
+                <li>Importação de Preços e Indicadores</li>
+                <li>Identificação de Padrões</li>
+                <li>Diário de Trades</li>
+              </ul>              
             </div>
             <div class="col-md-6 col-lg-7 d-flex align-items-center">
               <div class="card-body p-4 p-lg-5 text-black">
-
                 <form  action="" method="POST">
-
-                  <div class="d-flex align-items-center mb-3 pb-1">
-                    <i class="fas fa-cubes fa-2x me-3" style="color: #ff6219;"></i>
-                    <span class="h1 fw-bold mb-0"><img src="{% static 'img/logo.png' %}" alt="" width="300"></span>
-                  </div>
-
                   <h5 class="fw-normal mb-3 pb-3" style="letter-spacing: 1px;">Sign into your account</h5>
-
                   {% csrf_token %}
                   {{ form|crispy }}
-
                   <div class="pt-1 mb-4">
                     <button class="btn btn-dark btn-lg btn-block" type="submit">{{ botao|default:'Entrar' }}</button>
                   </div>
-
                   <a class="small text-muted" href="{% url 'cadastro:password_reset' %}">Forgot password?</a>
                   <p class="mb-5 pb-lg-2" style="color: #393f81;">Don't have an account? <a href="{% url 'cadastro:registrar' %}"
                       style="color: #393f81;">Register here</a></p>
-                  <a href="#!" class="small text-muted">Terms of use.</a>
-                  <a href="#!" class="small text-muted">Privacy policy</a>
+                  
                 </form>
 
               </div>
