@@ -661,22 +661,22 @@ def ShowGraph(request, stock_id=None, tf=None):
                     for item in is_detected:
                         if item.detected_pattern == 'Bearish Engulfing':
                             myshapes.append(dict(type="rect", xref="x1", yref='y1', 
-                                                x0=prices[i-1].date.strftime("%d/%m %H:%M"), x1=prices[i+1].date.strftime("%d/%m %H:%M"), 
+                                                x0=prices[i-1].date.strftime("%d/%m %H:%M"), x1=prices[i].date.strftime("%d/%m %H:%M"), 
                                                 y0=float(prices[i].high)*1.01 , y1=float(prices[i].low)*0.99,
                                                 opacity=0.4, fillcolor="red", line_color="red",))
                         if item.detected_pattern == 'Bullish Engulfing':
                             myshapes.append(dict(type="rect", xref="x1", yref='y1', 
-                                                x0=prices[i-1].date.strftime("%d/%m %H:%M"), x1=prices[i+1].date.strftime("%d/%m %H:%M"), 
+                                                x0=prices[i-1].date.strftime("%d/%m %H:%M"), x1=prices[i].date.strftime("%d/%m %H:%M"), 
                                                 y0=float(prices[i].high)*1.01 , y1=float(prices[i].low)*0.99,
                                                 opacity=0.4, fillcolor="green", line_color="green",))
                         if item.detected_pattern == 'Golden Cross ma20-ma50':
                             myshapes.append(dict(type="circle", xref="x1", yref='y1', 
-                                                x0=prices[i-1].date.strftime("%d/%m %H:%M"), x1=prices[i+1].date.strftime("%d/%m %H:%M"), 
+                                                x0=prices[i-1].date.strftime("%d/%m %H:%M"), x1=prices[i].date.strftime("%d/%m %H:%M"), 
                                                 y0=float(prices[i].ma20)*1.01, y1=float(prices[i].ma20)*0.99,
                                                 opacity=0.4, fillcolor="green", line_color="green",))
                         if item.detected_pattern == 'Death Cross ma20-ma50':
                             myshapes.append(dict(type="circle", xref="x1", yref='y1', 
-                                                x0=prices[i-1].date.strftime("%d/%m %H:%M"), x1=prices[i+1].date.strftime("%d/%m %H:%M"), 
+                                                x0=prices[i-1].date.strftime("%d/%m %H:%M"), x1=prices[i].date.strftime("%d/%m %H:%M"), 
                                                 y0=float(prices[i].ma20)*1.01, y1=float(prices[i].ma20)*0.99,
                                                 opacity=0.4, fillcolor="red", line_color="red",))
 
@@ -695,23 +695,23 @@ def ShowGraph(request, stock_id=None, tf=None):
                     for item in is_detected:
                         if item.detected_pattern == 'Bearish Engulfing':
                             myshapes.append(dict(type="rect", xref="x1", yref='y1', 
-                                            x0=prices[i-1].date.date(), x1=prices[i+1].date.date(), 
+                                            x0=prices[i-1].date.date(), x1=prices[i].date.date(), 
                                             y0=float(prices[i].high)*1.05, y1=float(prices[i].low)*0.95,
                                             opacity=0.4, fillcolor="red", line_color="red",))
                         if item.detected_pattern == 'Bullish Engulfing':
                             myshapes.append(dict(type="rect", xref="x1", yref='y1', 
-                                            x0=prices[i-1].date.date(), x1=prices[i+1].date.date(), 
+                                            x0=prices[i-1].date.date(), x1=prices[i].date.date(), 
                                             y0=float(prices[i].high)*1.05, y1=float(prices[i].low)*0.95,
                                             opacity=0.4, fillcolor="green", line_color="green",))
                         if item.detected_pattern == 'Golden Cross ma20-ma50':
                             myshapes.append(dict(type="circle", xref="x1", yref='y1', 
                                                 x0=prices[i-1].date.date(), y0=float(prices[i].ma20)*1.02, 
-                                                x1=prices[i+1].date.date(), y1=float(prices[i].ma20)*0.98,
+                                                x1=prices[i].date.date(), y1=float(prices[i].ma20)*0.98,
                                                 opacity=0.4, fillcolor="green", line_color="green",))
                         if item.detected_pattern == 'Death Cross ma20-ma50':
                             myshapes.append(dict(type="circle", xref="x1", yref='y1', 
                                                 x0=prices[i-1].date.date(), y0=float(prices[i].ma20)*1.02, 
-                                                x1=prices[i+1].date.date(), y1=float(prices[i].ma20)*0.98,
+                                                x1=prices[i].date.date(), y1=float(prices[i].ma20)*0.98,
                                                 opacity=0.4, fillcolor="red", line_color="red",))
         
         figure.update(layout_xaxis_rangeslider_visible=False)
