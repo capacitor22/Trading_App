@@ -33,7 +33,7 @@
                 <div class="mt-2">
                     <form action="{% url 'cadastro:ShowGraph' stock_id tf %}" method="post">
                         {% csrf_token %}
-                        <div class="d-flex flex-row">
+                        <div class="d-flex flex-row align-items-md-center ">
                             <div class="flex m-3">
                                 <label for="">Alterar TimeFrame:</label>
                                 <div class="form-floating mb-2">
@@ -48,11 +48,12 @@
                                         <label class="btn btn-outline-primary" for="option4">Hour</label>
                                         <input type="radio" class="btn-check" name="timeframe" id="option5" autocomplete="off" {% if tf == '5Minute' %} checked {% endif %} value="5Minute"/>
                                         <label class="btn btn-outline-primary" for="option5">Minute</label>
-                                      </div>
-                                    
+                                      </div>                                    
                                 </div>
                             </div>
-                            <button type="submit" class="btn btn-success" >Update Graph</button>
+                            <div class="flex m-3">
+                                <button type="submit" class="btn btn-success mt-auto" >Update Graph</button>
+                            </div>
                         </div>
                     </form>
                 </div>

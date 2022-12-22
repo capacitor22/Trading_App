@@ -1,68 +1,11 @@
-import matplotlib.pyplot as plt
-import mplfinance as mpf
-import base64
-from io import BytesIO, StringIO
 
-def get_graph():
-    buffer=BytesIO()
-    plt.savefig(buffer, format='png')
-    buffer.seek(0)
-    image_png=buffer.getvalue()
-    graph=base64.b64encode(image_png)
-    graph=graph.decode('utf-8')
-    buffer.close()
-    return graph
-
-
-def get_plot(x,y):
-    plt.switch_backend('AGG')
-    plt.figure(figsize=(10,5))
-    plt.title('sales...')
-    plt.plot(x,y)
-    plt.xticks(rotation=45)
-    plt.xlabel('item')
-    plt.ylabel('price')
-    plt.tight_layout()
-    graph=get_graph()
-    return graph
-
-def get_candlegraph():
-    buffer=StringIO()
-    mpf.savefig(buffer, format='svg')
-    buffer.seek(0)
-    graph=buffer.getvalue()
-    buffer.close()
-    return graph
-    
-
-def get_candleplot(prices):
-    mpf.switch_backend('AGG')
-    mpf.figure(figsize=(10,5))
-    mpf.title('Candlestick')
-    mpf.plot(prices, type='candle', volume=True)
-    mpf.xticks(rotation=45)
-    mpf.xlabel('Date')
-    mpf.ylabel('Price')
-    mpf.tight_layout()
-    graph=get_candlegraph()
-    return graph
-
-
-### Indicators
-def movingAverage(ma, prices):
-    sum = 0
-    if len(prices)<ma:
-        return None
-    else:
-        prices = prices[-ma:]
-        for i in range(1, ma):
-            sum += prices[i].close
-        return sum/ma
-
-
-### Trade Signs
+### Trading Patterns
 def is_bullish_candlestick(candle):
     return candle.close > candle.open
+
+def is_bearisn_candlestick(candle):
+    return candle.close < candle.open
+
 
 def is_bearish_engulfing(candles, index):
     current_candle = candles[index]
@@ -74,9 +17,6 @@ def is_bearish_engulfing(candles, index):
         return True
     return False
 
-def is_bearisn_candlestick(candle):
-    return candle.close < candle.open
-
 def is_bullish_engulfing(candles, index):
     current_candle = candles[index]
     previous_candle = candles[index-1]
@@ -87,8 +27,51 @@ def is_bullish_engulfing(candles, index):
         return True
     return False
 
-def deathCross():
-    pass
+def cross(candles, index, fast_ma, slow_ma):
+    current_candle = candles[index]
+    previous_candle = candles[index-1]
 
-def goldenCross():
-    pass
+    if fast_ma == 'ma9':
+        fastp = previous_candle.ma9 
+        fast = current_candle.ma9 
+    elif fast_ma == 'ma20':
+        fastp = previous_candle.ma20 
+        fast = current_candle.ma20 
+    elif fast_ma == 'ma50':
+        fastp = previous_candle.ma50 
+        fast = current_candle.ma50 
+    else:
+        return 0
+
+    if slow_ma == 'ma20':
+        slowp = previous_candle.ma20 
+        slow = current_candle.ma20
+    elif slow_ma == 'ma50':
+        slowp = previous_candle.ma50 
+        slow = current_candle.ma50
+    elif slow_ma == 'ma200':
+        slowp = previous_candle.ma200 
+        slow = current_candle.ma200
+    else:
+        return 0
+
+    if fastp != None and slowp != None and fast != None and slow != None:
+        if fastp < slowp and fast > slow:
+            # print("============")  
+            # print("current_candle.date", current_candle.date)  
+            # print("Fastp = ", fastp)
+            # print("Slowp = ", slowp)
+            # print("Fast = ", fast)
+            # print("Slow = ", slow)
+            return 1
+        elif fastp > slowp and fast < slow:
+            # print("============")    
+            # print("current_candle.date", current_candle.date)  
+            # print("Fastp = ", fastp)
+            # print("Slowp = ", slowp)
+            # print("Fast = ", fast)
+            # print("Slow = ", slow)
+            return -1
+        else:
+            return 0
+    return 0

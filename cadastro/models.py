@@ -49,6 +49,13 @@ class stock_price(models.Model):
     # class Meta:
     #     ordering = ['-date','timeframe'] 
 
+class detected_patterns(models.Model):
+    stock_price = models.ForeignKey(stock_price, on_delete=models.CASCADE)
+    detected_pattern = models.CharField(max_length=30, null=True, blank=True)
+    detection_method = models.CharField(max_length=30, null=True, blank=True)     
+    def __str__(self):
+        return self.detected_pattern + ' detected by ' + self.detection_method + ' on ' + self.stock_price.stock.symbol + ' - ' + self.stock_price.timeframe + ' - ' + self.stock_price.date.strftime("%d-%m-%Y %H:%M:%S")
+
 class watch_list(models.Model):
     User = models.ForeignKey(User, on_delete=models.CASCADE)
     stock = models.ForeignKey(stock, on_delete=models.CASCADE)

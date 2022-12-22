@@ -21,9 +21,9 @@ import tulipy as ti
 import numpy as np
 
 from config import *
-from .models import stock, stock_price, watch_list
+from .models import stock, stock_price, detected_patterns, watch_list
 from .forms import CustomCriaUsuarioForm
-from .utils import get_plot, is_bullish_engulfing, is_bearish_engulfing
+from .utils import is_bullish_engulfing, is_bearish_engulfing, cross
 
 ACCOUNT_URL = "{}/v2/account".format(BASE_URL)
 ORDERS_URL = "{}/v2/orders".format(BASE_URL)
@@ -113,10 +113,10 @@ def ImportStocksAlpaca(request):
                 imported += 1
             else:
                 updated += 1
-    print('processed = ', processed)
-    print('active_and_tradable = ', active_and_tradable)
-    print('imported = ', imported)
-    print('updated = ', updated)
+    # print('processed = ', processed)
+    # print('active_and_tradable = ', active_and_tradable)
+    # print('imported = ', imported)
+    # print('updated = ', updated)
     return redirect(reverse_lazy("cadastro:ListStocks"))
 
 
@@ -198,7 +198,7 @@ def UpdateIndicators(new_bar_ind, stock_ind, tf_ind):
 
 def InsertBarsIntoDB(new_bars, new_timeframe):
     for bar in new_bars:
-        print('Symbol = {} - Timeframe = {} - DateTime = {}', bar.S, new_timeframe, bar.t)
+        # print('Symbol = {} - Timeframe = {} - DateTime = {}', bar.S, new_timeframe, bar.t)
         # Importante: a variavel bar.S abaixo só existe se a API for consultada tendo uma lista de simbolos como entrada
         # Se a consulta for feita para apenas 1 simbolo, o parametro S de bar não é informado o que ocasionará um erro nesse ponto
         # Por isso, tanto a chamada de UpdatePricesAlpaca quanto UpdatePricesAlpacaOneStock precisam passar uma lista de simbolos como parametro, mesmo que seja uma lista unitária
@@ -280,24 +280,24 @@ def UpdatePricesAlpacaOneStock(symbol, start_date=None, end_date=None, timeframe
         # Day
         if start_date == None:
             last_day_bar_in_DB = stock_price.objects.filter(stock=thisStock, timeframe='Day').order_by('date').last()
-            print('Yesterday = ', yesterday)
+            # print('Yesterday = ', yesterday)
             if last_day_bar_in_DB:
-                print('Last = ', last_day_bar_in_DB.date.date())
+                # print('Last = ', last_day_bar_in_DB.date.date())
                 if last_day_bar_in_DB.date.date() >= yesterday:
                     prev_day = last_day_bar_in_DB.date.date() - timedelta(days = 1)
-                    print('Previous Day = ', prev_day)
+                    # print('Previous Day = ', prev_day)
                     # barsD = api.get_bars(symbol, TimeFrame.Day, prev_day, yesterday, adjustment='raw' )
                     bars = api.get_bars(symbol, TimeFrame.Day, prev_day, adjustment='raw' )                    
                 else:
-                    print('primeiro else - last day bar anterior ao yesterday')
+                    # print('primeiro else - last day bar anterior ao yesterday')
                     # bars = api.get_bars(symbol, TimeFrame.Day, last_day_bar_in_DB.date.date(), yesterday, adjustment='raw' )
                     bars = api.get_bars(symbol, TimeFrame.Day, last_day_bar_in_DB.date.date(), adjustment='raw' )
             else:
-                print('segundo else - sem last day bar')
+                # print('segundo else - sem last day bar')
                 # bars = api.get_bars(symbol, TimeFrame.Day, yesterday-td_day, yesterday, adjustment='raw' )
                 bars = api.get_bars(symbol, TimeFrame.Day, yesterday-td_day, adjustment='raw' )
         else:
-            print('Else sem barras anteriores')
+            # print('Else sem barras anteriores')
             bars = api.get_bars(symbol, TimeFrame.Day, start_date, end_date, adjustment='raw' ) 
 
     elif timeframe == 'Hour':
@@ -322,20 +322,20 @@ def UpdatePricesAlpacaOneStock(symbol, start_date=None, end_date=None, timeframe
         # 5Minute
         if start_date == None:
             last_5minute_bar_in_DB = stock_price.objects.filter(stock=thisStock, timeframe='5Minute').order_by('date').last()
-            print('Yesterday = ', yesterday)
+            # print('Yesterday = ', yesterday)
             if last_5minute_bar_in_DB:
-                print('Last = ', last_5minute_bar_in_DB.date.date())
+                # print('Last = ', last_5minute_bar_in_DB.date.date())
                 if last_5minute_bar_in_DB.date.date() >= yesterday:
                     prev_min= last_5minute_bar_in_DB.date.date()  - timedelta(minutes = 1)
                     # bars = api.get_bars(symbol, TimeFrame(5, TimeFrameUnit.Minute), prev_min, yesterday, adjustment='raw' )
-                    print('Previous Minute = ', prev_min)
+                    # print('Previous Minute = ', prev_min)
                     bars = api.get_bars(symbol, TimeFrame(5, TimeFrameUnit.Minute), prev_min, adjustment='raw' )
                 else:
-                    print('Primeiro Else - barra anterior ao yesterday')
+                    # print('Primeiro Else - barra anterior ao yesterday')
                     # bars = api.get_bars(symbol, TimeFrame(5, TimeFrameUnit.Minute), last_5minute_bar_in_DB.date.date(), yesterday, adjustment='raw' )
                     bars = api.get_bars(symbol, TimeFrame(5, TimeFrameUnit.Minute), last_5minute_bar_in_DB.date.date(), adjustment='raw' )
             else:
-                print('segundo else - sem last 5Min bar')
+                # print('segundo else - sem last 5Min bar')
                 # bars = api.get_bars(symbol, TimeFrame(5, TimeFrameUnit.Minute), yesterday-td_minute, yesterday, adjustment='raw' )
                 bars = api.get_bars(symbol, TimeFrame(5, TimeFrameUnit.Minute), yesterday-td_minute, adjustment='raw' )
         else:
@@ -389,25 +389,25 @@ def UpdatePricesAlpacaOneStock(symbol, start_date=None, end_date=None, timeframe
         # Day
         if start_date == None:
             last_day_bar_in_DB = stock_price.objects.filter(stock=thisStock, timeframe='Day').order_by('date').last()
-            print('Yesterday = ', yesterday)
+            # print('Yesterday = ', yesterday)
             if last_day_bar_in_DB:
-                print('Last = ', last_day_bar_in_DB.date.date())
+                # print('Last = ', last_day_bar_in_DB.date.date())
                 if last_day_bar_in_DB.date.date() >= yesterday:
-                    print('entrei')
+                    # print('entrei')
                     prev_day = last_day_bar_in_DB.date.date() - timedelta(days = 1)
-                    print('Previous Day = ', prev_day)
+                    # print('Previous Day = ', prev_day)
                     # barsD = api.get_bars(symbol, TimeFrame.Day, prev_day, yesterday, adjustment='raw' )
                     barsD = api.get_bars(symbol, TimeFrame.Day, prev_day, adjustment='raw' )
                 else:
-                    print('primeiro else - last day bar anterior ao yesterday')
+                    # print('primeiro else - last day bar anterior ao yesterday')
                     # barsD = api.get_bars(symbol, TimeFrame.Day, last_day_bar_in_DB.date.date(), yesterday, adjustment='raw' )
                     barsD = api.get_bars(symbol, TimeFrame.Day, last_day_bar_in_DB.date.date(), adjustment='raw' )
             else:
-                print('segundo else - sem last day bar')
+                # print('segundo else - sem last day bar')
                 # barsD = api.get_bars(symbol, TimeFrame.Day, yesterday-td_day, yesterday, adjustment='raw' )
                 barsD = api.get_bars(symbol, TimeFrame.Day, yesterday-td_day, adjustment='raw' )
         else:
-            print('Else sem barras anteriores')
+            # print('Else sem barras anteriores')
             barsD = api.get_bars(symbol, TimeFrame.Day, start_date, end_date, adjustment='raw' )
 
         # Hour
@@ -475,8 +475,8 @@ def UpdatePricesAlpaca(symbols, start_date=None, end_date=None, timeframe='ALL')
     td_day=timedelta(50)
     td_hour=timedelta(5)
     td_minute=timedelta(1)
-    print(timeframe)
-    print(symbols)
+    # print(timeframe)
+    # print(symbols)
     for i in range(0, len(symbols), chunk_size):
         symbol_chunk = symbols[i:i+chunk_size]
         if timeframe == 'Month':
@@ -519,7 +519,7 @@ def WatchList(request, id=None):
                     stock = stock.objects.get(id=item),
                     User = request.user,
                 )
-                print(created)
+                # print(created)
     elif request.GET and id != None:
         pass
         # Chamar o mesmo form habilitando a MODAL
@@ -600,101 +600,135 @@ def ShowGraph(request, stock_id=None, tf=None):
 
         # Calculando padrões
         for i in range(1, len(prices)):
-            if is_bullish_engulfing(prices, i):
-                print('{}It is a bullish engolfing'.format(prices[i].date))
-            if is_bearish_engulfing(prices, i):
-                print('{}It is a bearish engolfing'.format(prices[i].date))
-
-        # Usando PLOTLY 
-        if tf == 'Hour' or tf == '5Minute':
-            candles=[go.Candlestick(x=[c.date for c in prices], open=[c.open for c in prices], high=[c.high for c in prices], low=[c.low for c in prices], close=[c.close for c in prices]),
-                go.Scatter(x=[c.date for c in prices], y=[c.ma20 for c in prices], name = 'mm20',),
-                go.Scatter(x=[c.date for c in prices], y=[c.ma50 for c in prices], name = 'mm50',),
-                go.Scatter(x=[c.date for c in prices], y=[c.ma9 for c in prices], name = 'mm9',),
-                go.Scatter(x=[c.date for c in prices], y=[c.ma200 for c in prices], name = 'mm200',),
-                ]
-            volume_bars = go.Bar(
-                x=[c.date for c in prices],
-                y=[c.volume for c in prices],
-                showlegend=False,
-                marker={
-                    "color": "rgba(128,128,128,0.5)",
-                }
-            )
-        else:        
-            candles=[go.Candlestick(x=[c.date.date() for c in prices], open=[c.open for c in prices], high=[c.high for c in prices], low=[c.low for c in prices], close=[c.close for c in prices]),
-                go.Scatter(x=[c.date.date() for c in prices], y=[c.ma20 for c in prices], name = 'mm20',),
-                go.Scatter(x=[c.date.date() for c in prices], y=[c.ma50 for c in prices], name = 'mm50',),
-                go.Scatter(x=[c.date.date() for c in prices], y=[c.ma9 for c in prices], name = 'mm9',),
-                go.Scatter(x=[c.date.date() for c in prices], y=[c.ma200 for c in prices], name = 'mm200',),
-                ]
-            volume_bars = go.Bar(
-                x=[c.date.date() for c in prices],
-                y=[c.volume for c in prices],
-                showlegend=False,
-                marker={
-                    "color": "rgba(128,128,128,0.5)",
-                }
-            )
-
-        layout=go.Layout(title=stock_par.symbol,
-                xaxis_rangeslider_visible=False,                
-                autosize=False,
-                width=1300,
-                height=650,
-                # margin=dict(l=5,r=5,b=5,t=50,pad=5)                
-                yaxis_title = "Price (USD)", 
-                # xaxis_type = "category",
-                xaxis_title = "Date"
+            is_cross = 0
+            is_cross = cross(prices, i, "ma20", "ma50") 
+            if is_cross == 1:
+                # print('Golden Cross', prices[i].date)
+                obj, created = detected_patterns.objects.update_or_create(
+                    stock_price = prices[i],
+                    detected_pattern = 'Golden Cross ma20-ma50',
+                    defaults={
+                        'detection_method': 'SelfFunc'
+                    },
                 )
-        fig=go.Figure(data=candles, layout=layout)
-        fig.update_layout(title={'font_size': 22, 'xanchor': 'center', 'x': 0.5})
+            elif is_cross == -1:
+                # print('Death Cross', prices[i].date)
+                obj, created = detected_patterns.objects.update_or_create(
+                    stock_price = prices[i],
+                    detected_pattern = 'Death Cross ma20-ma50',
+                    defaults={
+                        'detection_method': 'SelfFunc'
+                    },
+                )
+            # else:
+                # print('Sem cruzamento')
+                
+
+            if is_bullish_engulfing(prices, i):
+                # print('{}It is a bullish engolfing'.format(prices[i].date))
+                obj, created = detected_patterns.objects.update_or_create(
+                    stock_price = prices[i],
+                    detected_pattern = 'Bullish Engulfing',
+                    defaults={
+                        'detection_method': 'SelfFunc'
+                    },
+                )
+
+            if is_bearish_engulfing(prices, i):
+                # print('{}It is a bearish engolfing'.format(prices[i].date))
+                obj, created = detected_patterns.objects.update_or_create(
+                    stock_price = prices[i],
+                    detected_pattern = 'Bearish Engulfing',
+                    defaults={
+                        'detection_method': 'SelfFunc'
+                    },
+                )
+
 
         figure = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.7, 0.3], vertical_spacing = 0)
-        figure.add_trace(go.Candlestick(x=[c.date.date() for c in prices], open=[c.open for c in prices], high=[c.high for c in prices], 
-            low=[c.low for c in prices], close=[c.close for c in prices]), row=1, col=1)
-        figure.add_trace(go.Scatter(x=[c.date.date() for c in prices], y=[c.ma20 for c in prices], name = 'mm20',), row=1, col=1)
-        figure.add_trace(go.Scatter(x=[c.date.date() for c in prices], y=[c.ma50 for c in prices], name = 'mm50',), row=1, col=1)
-        figure.add_trace(go.Scatter(x=[c.date.date() for c in prices], y=[c.ma9 for c in prices], name = 'mm9',), row=1, col=1)
-        figure.add_trace(go.Scatter(x=[c.date.date() for c in prices], y=[c.ma200 for c in prices], name = 'mm200',), row=1, col=1)
-        figure.add_trace(go.Bar(x=[c.date.date() for c in prices], y=[c.volume for c in prices], showlegend=False, marker_color='#ef5350'), row=2, col=1)
+        if tf == 'Hour' or tf == '5Minute':
+            figure.add_trace(go.Candlestick(x=[c.date.strftime("%d/%m %H:%M") for c in prices], open=[c.open for c in prices], high=[c.high for c in prices], 
+                low=[c.low for c in prices], close=[c.close for c in prices]), row=1, col=1)
+            figure.add_trace(go.Scatter(x=[c.date.strftime("%d/%m %H:%M") for c in prices], y=[c.ma20 for c in prices], name = 'mm20',), row=1, col=1)
+            figure.add_trace(go.Scatter(x=[c.date.strftime("%d/%m %H:%M") for c in prices], y=[c.ma50 for c in prices], name = 'mm50',), row=1, col=1)
+            figure.add_trace(go.Scatter(x=[c.date.strftime("%d/%m %H:%M") for c in prices], y=[c.ma9 for c in prices], name = 'mm9',), row=1, col=1)
+            figure.add_trace(go.Scatter(x=[c.date.strftime("%d/%m %H:%M") for c in prices], y=[c.ma200 for c in prices], name = 'mm200',), row=1, col=1)
+            figure.add_trace(go.Bar(x=[c.date.strftime("%d/%m %H:%M") for c in prices], y=[c.volume for c in prices], showlegend=False, marker_color='#ef5350'), row=2, col=1)
+            myshapes=[]
+            for i in range(0,len(prices)):
+                if detected_patterns.objects.filter(stock_price=prices[i]) and i != 0 and i != len(prices):
+                    is_detected = detected_patterns.objects.filter(stock_price=prices[i])                    
+                    for item in is_detected:
+                        if item.detected_pattern == 'Bearish Engulfing':
+                            myshapes.append(dict(type="rect", xref="x1", yref='y1', 
+                                                x0=prices[i-1].date.strftime("%d/%m %H:%M"), x1=prices[i+1].date.strftime("%d/%m %H:%M"), 
+                                                y0=float(prices[i].high)*1.01 , y1=float(prices[i].low)*0.99,
+                                                opacity=0.4, fillcolor="red", line_color="red",))
+                        if item.detected_pattern == 'Bullish Engulfing':
+                            myshapes.append(dict(type="rect", xref="x1", yref='y1', 
+                                                x0=prices[i-1].date.strftime("%d/%m %H:%M"), x1=prices[i+1].date.strftime("%d/%m %H:%M"), 
+                                                y0=float(prices[i].high)*1.01 , y1=float(prices[i].low)*0.99,
+                                                opacity=0.4, fillcolor="green", line_color="green",))
+                        if item.detected_pattern == 'Golden Cross ma20-ma50':
+                            myshapes.append(dict(type="circle", xref="x1", yref='y1', 
+                                                x0=prices[i-1].date.strftime("%d/%m %H:%M"), x1=prices[i+1].date.strftime("%d/%m %H:%M"), 
+                                                y0=float(prices[i].ma20)*1.01, y1=float(prices[i].ma20)*0.99,
+                                                opacity=0.4, fillcolor="green", line_color="green",))
+                        if item.detected_pattern == 'Death Cross ma20-ma50':
+                            myshapes.append(dict(type="circle", xref="x1", yref='y1', 
+                                                x0=prices[i-1].date.strftime("%d/%m %H:%M"), x1=prices[i+1].date.strftime("%d/%m %H:%M"), 
+                                                y0=float(prices[i].ma20)*1.01, y1=float(prices[i].ma20)*0.99,
+                                                opacity=0.4, fillcolor="red", line_color="red",))
+
+        else:
+            figure.add_trace(go.Candlestick(x=[c.date.date() for c in prices], open=[c.open for c in prices], high=[c.high for c in prices], 
+                low=[c.low for c in prices], close=[c.close for c in prices]), row=1, col=1)
+            figure.add_trace(go.Scatter(x=[c.date.date() for c in prices], y=[c.ma20 for c in prices], name = 'mm20',), row=1, col=1)
+            figure.add_trace(go.Scatter(x=[c.date.date() for c in prices], y=[c.ma50 for c in prices], name = 'mm50',), row=1, col=1)
+            figure.add_trace(go.Scatter(x=[c.date.date() for c in prices], y=[c.ma9 for c in prices], name = 'mm9',), row=1, col=1)
+            figure.add_trace(go.Scatter(x=[c.date.date() for c in prices], y=[c.ma200 for c in prices], name = 'mm200',), row=1, col=1)
+            figure.add_trace(go.Bar(x=[c.date.date() for c in prices], y=[c.volume for c in prices], showlegend=False, marker_color='#ef5350'), row=2, col=1)
+            myshapes=[]
+            for i in range(0,len(prices)):
+                if detected_patterns.objects.filter(stock_price=prices[i]):
+                    is_detected = detected_patterns.objects.filter(stock_price=prices[i])
+                    for item in is_detected:
+                        if item.detected_pattern == 'Bearish Engulfing':
+                            myshapes.append(dict(type="rect", xref="x1", yref='y1', 
+                                            x0=prices[i-1].date.date(), x1=prices[i+1].date.date(), 
+                                            y0=float(prices[i].high)*1.05, y1=float(prices[i].low)*0.95,
+                                            opacity=0.4, fillcolor="red", line_color="red",))
+                        if item.detected_pattern == 'Bullish Engulfing':
+                            myshapes.append(dict(type="rect", xref="x1", yref='y1', 
+                                            x0=prices[i-1].date.date(), x1=prices[i+1].date.date(), 
+                                            y0=float(prices[i].high)*1.05, y1=float(prices[i].low)*0.95,
+                                            opacity=0.4, fillcolor="green", line_color="green",))
+                        if item.detected_pattern == 'Golden Cross ma20-ma50':
+                            myshapes.append(dict(type="circle", xref="x1", yref='y1', 
+                                                x0=prices[i-1].date.date(), y0=float(prices[i].ma20)*1.02, 
+                                                x1=prices[i+1].date.date(), y1=float(prices[i].ma20)*0.98,
+                                                opacity=0.4, fillcolor="green", line_color="green",))
+                        if item.detected_pattern == 'Death Cross ma20-ma50':
+                            myshapes.append(dict(type="circle", xref="x1", yref='y1', 
+                                                x0=prices[i-1].date.date(), y0=float(prices[i].ma20)*1.02, 
+                                                x1=prices[i+1].date.date(), y1=float(prices[i].ma20)*0.98,
+                                                opacity=0.4, fillcolor="red", line_color="red",))
+        
         figure.update(layout_xaxis_rangeslider_visible=False)
         figure.update(layout_title=stock_par.symbol)
         figure.update(layout_autosize=False)
         figure.update(layout_width=1300)
         figure.update(layout_height=650)
-        figure.update_yaxes(title_text=f'Volume', row=2, col=1)
         
         figure.update_yaxes(title="Price $", row=1, col=1, showgrid=True)
         figure.update_yaxes(title="Volume $", row=2, col=1, showgrid=False)
-        figure.update_xaxes(title_text='Date', type = "category", row=2)
+        figure.update_xaxes(type = "category", row=1)
+        figure.update_xaxes(title_text='Date', type = "category", row=2, tickangle=65)
+        
         figure.update_layout(title={'font_size': 22, 'xanchor': 'center', 'x': 0.5})
 
-        # figure = make_subplots(specs=[[{"secondary_y": True}]])
-        # figure.add_trace(go.Candlestick(x=[c.date.date() for c in prices], open=[c.open for c in prices], high=[c.high for c in prices], 
-        #     low=[c.low for c in prices], close=[c.close for c in prices]), secondary_y=True)
-        # figure.add_trace(go.Scatter(x=[c.date.date() for c in prices], y=[c.ma20 for c in prices], name = 'mm20',), secondary_y=True)
-        # figure.add_trace(go.Scatter(x=[c.date.date() for c in prices], y=[c.ma50 for c in prices], name = 'mm50',), secondary_y=True)
-        # figure.add_trace(go.Scatter(x=[c.date.date() for c in prices], y=[c.ma9 for c in prices], name = 'mm9',), secondary_y=True)
-        # figure.add_trace(go.Scatter(x=[c.date.date() for c in prices], y=[c.ma200 for c in prices], name = 'mm200',), secondary_y=True)
-        # figure.add_trace(go.Bar(x=[c.date.date() for c in prices], y=[c.volume for c in prices], showlegend=False, marker={"color": "rgba(128,128,128,0.5)",}), secondary_y=False)
-        # figure.update(layout_xaxis_rangeslider_visible=False)
-        # figure.update(layout_title=stock_par.symbol)
-        # figure.update(layout_autosize=False)
-        # figure.update(layout_width=1300)
-        # figure.update(layout_height=650)
-        # figure.update_yaxes(title="Price $", secondary_y=True, showgrid=True)
-        # figure.update_yaxes(title="Volume $", secondary_y=False, showgrid=False)
-        # figure.update_xaxes(title_text='Date', type = "category")
-        # figure.update_layout(title={'font_size': 22, 'xanchor': 'center', 'x': 0.5})
-
+        figure.update_layout( shapes = myshapes )
         
-
-
-        # logica para povoar o dt_breaks. Se quiser tratar as datas do eixo x como datas realmente, preciso retuirar o xaxis_type = category e implamenar uma logica como essa
-        # fig.update_xaxes(rangebreaks=[dict(values=dt_breaks)]) # hide dates with no values
-
-        # chart=fig.to_html()
 
         chart=figure.to_html()
 
@@ -714,15 +748,15 @@ def ShowGraph(request, stock_id=None, tf=None):
 def twChart(request, exchange, stock):
     exchange = exchange
     stock = stock
-    print('passei')
-    print(exchange)
-    print(stock)
+    # print('passei')
+    # print(exchange)
+    # print(stock)
     context = {'exchange': exchange, 'stock':stock}
     return render(request, 'cadastro/modal/tw_chart_widget.html', context)
 
 def findPatterns(pattern='ALL', assets=None, tf=None):
     if assets==None or tf==None:
-        print('Asset e Timeframe são obrigatórios')
+        # print('Asset e Timeframe são obrigatórios')
         return
     else:
         for asset in assets:
@@ -730,6 +764,6 @@ def findPatterns(pattern='ALL', assets=None, tf=None):
             if pattern=='ALL':
                 # Bullish Engulfing
                 for i in range(1, len(candles)):
-                    print(candles[i])
+                    # print(candles[i])
                     if is_bullish_engulfing(candles, i):
                         print('It is a bullish engulfing')
